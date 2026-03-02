@@ -1,9 +1,16 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 
 	let isLoading = $state(false);
 	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+	onMount(() => {
+		if (localStorage.getItem('ark_token')) {
+			window.location.href = `${base}/dashboard`;
+		}
+	});
 
 	async function loginWithDiscord() {
 		try {

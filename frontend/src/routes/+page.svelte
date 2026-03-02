@@ -1,6 +1,15 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+
+	let startHref = $state(`${base}/login`);
+
+	onMount(() => {
+		if (localStorage.getItem('ark_token')) {
+			startHref = `${base}/dashboard`;
+		}
+	});
 </script>
 
 <svelte:head>
@@ -15,6 +24,6 @@
 	<div class="max-w-md">
 		<h1 class="text-5xl font-bold mb-6">Ark Resolver</h1>
 		<p class="text-xl mb-8 opacity-80">Group Party Management System</p>
-		<a href="{base}/login" class="btn btn-primary btn-lg">Get Started</a>
+		<a href={startHref} class="btn btn-primary btn-lg">Get Started</a>
 	</div>
 </main>
