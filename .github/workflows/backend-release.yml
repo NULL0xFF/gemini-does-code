@@ -1,0 +1,51 @@
+name: Backend Release
+
+on:
+  push:
+    branches:
+      - dev
+      - feature/backend
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-release.yml'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x backend/gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build -x test
+        working-directory: backend
+
+      - name: Prepare Artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp backend/server/build/libs/server-0.0.1-SNAPSHOT.jar release-artifacts/ark-server.jar
+          cp backend/sample-plugin/build/libs/sample-plugin-0.0.1-SNAPSHOT.jar release-artifacts/sample-plugin.jar
+          cp backend/plugin-api/build/libs/plugin-api-0.0.1-SNAPSHOT.jar release-artifacts/plugin-api.jar
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="backend-$(date +'%Y%m%d-%H%M%S')"
+          gh release create "$TAG_NAME" \
+            --title "Backend Release - $(date +'%Y-%m-%d %H:%M')" \
+            --notes "Automated backend build from branch ${{ github.ref_name }}. Includes server, API, and sample plugin." \
+            release-artifacts/*.jar
