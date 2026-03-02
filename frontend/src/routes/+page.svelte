@@ -3,6 +3,10 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 </script>
 
+<svelte:head>
+	<title>Ark Resolver - Group Party Management System</title>
+</svelte:head>
+
 <main class="min-h-screen bg-base-200 flex flex-col justify-center items-center text-center relative p-4">
 	<div class="absolute top-4 right-4">
 		<ThemeToggle />
