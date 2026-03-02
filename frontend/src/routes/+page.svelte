@@ -16,6 +16,6 @@
 	<div class="max-w-md">
 		<h1 class="text-5xl font-bold mb-6">Ark Resolver</h1>
 		<p class="text-xl mb-8 opacity-80">Group Party Management System</p>
-		<button class="btn btn-primary btn-lg">Get Started</button>
+		<a href="{base}/login" class="btn btn-primary btn-lg">Get Started</a>
 	</div>
 </main>
