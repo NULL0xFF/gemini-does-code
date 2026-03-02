@@ -1,11 +1,33 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+
+	let backendMessage = 'Loading...';
+	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+	onMount(async () => {
+		try {
+			const response = await fetch(`${apiUrl}/api/hello`);
+			if (!response.ok) throw new Error('Network response was not ok');
+			const data = await response.json();
+			backendMessage = data.message;
+		} catch (error) {
+			console.error('Failed to fetch:', error);
+			backendMessage = 'Failed to load data from backend. Ensure you are on the Tailscale network and it is running.';
+		}
+	});
 </script>
 
 <main class="container">
 	<div class="hero">
 		<h1>Welcome to the Fullstack App</h1>
-		<p>This is a custom web application built with Svelte 5.</p>
-		<p>We are incrementally developing it, starting with this landing page!</p>
+		<p>This is a custom web application built with Svelte 5 and Spring Boot 3.</p>
+		
+		<div class="backend-status">
+			<h3>Backend Status:</h3>
+			<p class="message">{backendMessage}</p>
+			<small>Connected to: {apiUrl}</small>
+		</div>
+
 		<div class="actions">
 			<button on:click={() => alert('Get Started clicked!')}>Get Started</button>
 			<button class="secondary" on:click={() => alert('Learn More clicked!')}>Learn More</button>
@@ -52,6 +74,32 @@
 		line-height: 1.6;
 		margin-bottom: 1.5rem;
 		color: #555;
+	}
+
+	.backend-status {
+		margin: 2rem 0;
+		padding: 1.5rem;
+		background: #f1f3f5;
+		border-radius: 8px;
+		border-left: 4px solid #ff3e00;
+		text-align: left;
+	}
+
+	.backend-status h3 {
+		margin-top: 0;
+		margin-bottom: 0.5rem;
+		font-size: 1.1rem;
+	}
+
+	.backend-status .message {
+		font-weight: 600;
+		color: #212529;
+		margin-bottom: 0.5rem;
+	}
+
+	.backend-status small {
+		color: #868e96;
+		word-break: break-all;
 	}
 
 	.actions {
