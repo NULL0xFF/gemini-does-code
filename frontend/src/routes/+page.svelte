@@ -1,20 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
-
-	let backendMessage = 'Checking connection...';
-	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+	import { themeChange } from 'theme-change';
 
 	onMount(async () => {
-		try {
-			const response = await fetch(`${apiUrl}/api/hello`);
-			if (!response.ok) throw new Error('Network response was not ok');
-			const data = await response.json();
-			backendMessage = data.message;
-		} catch (error) {
-			console.error('Failed to fetch:', error);
-			backendMessage = 'Failed to load data from backend.';
-		}
+		themeChange(false);
 	});
 </script>
 
@@ -28,7 +18,6 @@
 				</div>
 				<ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
 					<li><a href="#features">Features</a></li>
-					<li><a href="#status">Status</a></li>
 				</ul>
 			</div>
 			<a class="btn btn-ghost text-xl font-bold" href="{base}/">Ark Resolver</a>
@@ -36,10 +25,16 @@
 		<div class="navbar-center hidden lg:flex">
 			<ul class="menu menu-horizontal px-1 font-semibold">
 				<li><a href="#features">Features</a></li>
-				<li><a href="#status">Status</a></li>
 			</ul>
 		</div>
-		<div class="navbar-end">
+		<div class="navbar-end gap-2">
+			<label class="swap swap-rotate btn btn-ghost btn-circle">
+				<input type="checkbox" class="theme-controller" value="dark" />
+				<!-- sun icon -->
+				<svg class="swap-off fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
+				<!-- moon icon -->
+				<svg class="swap-on fill-current w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
+			</label>
 			<button class="btn btn-primary">Get Started</button>
 		</div>
 	</div>
@@ -108,39 +103,6 @@
 		</div>
 	</div>
 
-	<!-- Status / Connection Section -->
-	<div id="status" class="py-20 bg-base-200">
-		<div class="container mx-auto px-4 text-center">
-			<div class="max-w-xl mx-auto card bg-base-100 shadow-lg border-t-4 border-info">
-				<div class="card-body">
-					<h2 class="card-title justify-center text-2xl mb-4">System Status</h2>
-					<div class="stat place-items-center p-0">
-						<div class="stat-title text-lg">Backend API Connection</div>
-						<div class="stat-value text-xl mt-2 flex items-center gap-2">
-							{#if backendMessage === 'Checking connection...'}
-								<span class="loading loading-spinner text-info loading-md"></span>
-							{:else if backendMessage.includes('Failed')}
-								<div class="badge badge-error gap-2 p-4">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-									Offline
-								</div>
-							{:else}
-								<div class="badge badge-success gap-2 p-4 text-white">
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="inline-block w-4 h-4 stroke-current"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-									Online
-								</div>
-							{/if}
-						</div>
-						<div class="stat-desc mt-4 w-full p-4 bg-base-200 rounded-lg text-left break-words">
-							<span class="font-mono text-sm opacity-80">{backendMessage}</span>
-						</div>
-						<div class="stat-desc mt-4 opacity-50">Target: {apiUrl}</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
 	<!-- Footer -->
 	<footer class="footer footer-center p-10 bg-neutral text-neutral-content rounded">
 		<aside>
@@ -148,13 +110,5 @@
 			<p>Group Party Management System</p>
 			<p>Providing reliable coordination for your gaming sessions since 2026</p>
 		</aside> 
-		<nav>
-			<div class="grid grid-flow-col gap-4">
-				<!-- GitHub Icon -->
-				<a href="https://github.com/NULL0xFF/gemini-does-code" class="hover:text-primary transition-colors">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="fill-current"><path d="M12,2A10,10 0 0,0 8.84,21.5C9.34,21.58 9.5,21.27 9.5,21V19.31C6.73,19.91 6.14,18 6.14,18C5.69,16.86 5,16.5 5,16.5C4.06,15.86 5.08,15.88 5.08,15.88C6.1,15.95 6.64,16.92 6.64,16.92C7.55,18.47 9.02,18 9.57,17.77C9.66,17.15 9.9,16.69 10.17,16.42C7.94,16.17 5.6,15.31 5.6,11.5C5.6,10.4 5.92,9.5 6.45,8.8C6.36,8.54 6.09,7.5 6.54,6.26C6.54,6.26 7.23,6.04 9.06,7.27C9.72,7.09 10.43,7 11.14,7C11.85,7 12.56,7.09 13.22,7.27C15.05,6.04 15.74,6.26 15.74,6.26C16.19,7.5 15.92,8.54 15.83,8.8C16.36,9.5 16.68,10.4 16.68,11.5C16.68,15.33 14.33,16.16 12.1,16.41C12.43,16.7 12.72,17.26 12.72,18.14V21C12.72,21.28 12.89,21.59 13.38,21.5C16.24,20.55 18.39,17.84 18.5,14.67L18.5,14.5C18.5,10.91 15.59,8 12,8Z"></path></svg>
-				</a>
-			</div>
-		</nav>
 	</footer>
 </div>
