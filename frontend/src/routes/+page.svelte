@@ -1,11 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
-	import { themeChange } from 'theme-change';
-
-	onMount(async () => {
-		themeChange(false);
-	});
 </script>
 
 <div class="min-h-screen bg-base-200 flex flex-col">
