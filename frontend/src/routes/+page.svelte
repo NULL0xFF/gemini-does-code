@@ -19,7 +19,7 @@
 
 <main class="container">
 	<div class="hero">
-		<h1>Welcome to the Fullstack App</h1>
+		<h1>Ark Resolver - Group Party Management System</h1>
 		<p>This is a custom web application built with Svelte 5 and Spring Boot 3.</p>
 		
 		<div class="backend-status">
