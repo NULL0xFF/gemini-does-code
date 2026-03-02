@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { base } from '$app/paths';
 
 	let backendMessage = 'Checking connection...';
 	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -30,7 +31,7 @@
 					<li><a href="#status">Status</a></li>
 				</ul>
 			</div>
-			<a class="btn btn-ghost text-xl font-bold" href="/">Ark Resolver</a>
+			<a class="btn btn-ghost text-xl font-bold" href="{base}/">Ark Resolver</a>
 		</div>
 		<div class="navbar-center hidden lg:flex">
 			<ul class="menu menu-horizontal px-1 font-semibold">
