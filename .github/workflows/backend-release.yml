@@ -91,7 +91,8 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
           
+          # Use GitHub CLI to auto-generate release notes based on commits since previous tag
           gh release create "$FINAL_VERSION" $PRERELEASE_FLAG \
             --title "Backend Release $FINAL_VERSION" \
-            --notes "Automated backend build from branch ${{ github.ref_name }}. Includes server, API, and sample plugin." \
+            --generate-notes \
             release-artifacts/*.jar
