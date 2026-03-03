@@ -6,6 +6,7 @@
 
 	let token = $state('');
 	let user = $state<any>(null);
+	let groups = $state<any[]>([]);
 	let isLoading = $state(true);
 	let error = $state('');
 	let showSuccessToast = $state(false);
@@ -32,12 +33,17 @@
 		}
 
 		try {
-			user = await fetchJson<any>('/api/users/me');
+			const [userData, userGroups] = await Promise.all([
+				fetchJson<any>('/api/users/me'),
+				fetchJson<any[]>('/api/groups')
+			]);
+			user = userData;
+			groups = userGroups;
 		} catch (err) {
 			console.error(err);
 			// 401 is handled globally by fetchJson
 			if (!(err instanceof ApiError && err.status === 401)) {
-				error = 'Failed to load user data. Please try logging in again.';
+				error = 'Failed to load dashboard data. Please try logging in again.';
 			}
 		} finally {
 			isLoading = false;
@@ -127,16 +133,33 @@
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 							<div class="card bg-base-100 shadow-xl border-t-4 border-info">
 								<div class="card-body">
-									<h2 class="card-title text-ubuntu">My Groups</h2>
-									<p class="opacity-70 text-sm">Manage your static rosters and view member availability heatmap.</p>
-									<div class="card-actions justify-end mt-4">
-										<a href="{base}/groups/create" class="btn btn-primary btn-sm md:btn-md">Create Group</a>
+									<div class="flex justify-between items-center mb-2">
+										<h2 class="card-title text-ubuntu font-bold">My Groups</h2>
+										<a href="{base}/groups/create" class="btn btn-primary btn-sm">New Group</a>
 									</div>
+									
+									{#if groups.length === 0}
+										<p class="opacity-70 text-sm">You are not a member of any groups yet.</p>
+									{:else}
+										<div class="space-y-3 mt-2">
+											{#each groups as group}
+												<div class="p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors cursor-pointer group">
+													<div class="flex justify-between items-center">
+														<span class="font-bold text-sm text-ubuntu">{group.name}</span>
+														<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
+													</div>
+													{#if group.description}
+														<p class="text-xs opacity-60 truncate mt-1">{group.description}</p>
+													{/if}
+												</div>
+											{/each}
+										</div>
+									{/if}
 								</div>
 							</div>
 							<div class="card bg-base-100 shadow-xl border-t-4 border-secondary">
 								<div class="card-body">
-									<h2 class="card-title text-ubuntu">Join a Group</h2>
+									<h2 class="card-title text-ubuntu font-bold">Join a Group</h2>
 									<p class="opacity-70 text-sm">Use an invite code to join an existing group roster.</p>
 									<div class="card-actions justify-end mt-4">
 										<button class="btn btn-secondary btn-sm md:btn-md">Enter Code</button>
