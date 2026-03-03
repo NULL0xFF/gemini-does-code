@@ -7,13 +7,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import com.null0xff.ark.server.dto.GroupResponse;
 import com.null0xff.ark.server.entity.Group;
 import com.null0xff.ark.server.entity.GroupMember;
 import com.null0xff.ark.server.enums.GroupRole;
 import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.GroupRepository;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing user profile information and account lifecycle.
@@ -29,6 +32,21 @@ public class UserService {
         this.userRepository = userRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
+    }
+
+    /**
+     * Retrieves all groups that the specified user is a member of.
+     *
+     * @param userId The unique identifier of the user
+     * @return A list of GroupResponse details
+     */
+    public List<GroupResponse> getUserGroups(UUID userId) {
+        return groupMemberRepository.findByUserId(userId).stream()
+                .map(membership -> {
+                    Group group = membership.getGroup();
+                    return new GroupResponse(group.getId(), group.getName(), group.getDescription());
+                })
+                .collect(Collectors.toList());
     }
 
     /**

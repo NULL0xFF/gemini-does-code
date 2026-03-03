@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -26,6 +27,21 @@ public class GroupController {
 
     public GroupController(UserService userService) {
         this.userService = userService;
+    }
+
+    /**
+     * Retrieves all groups that the currently authenticated user belongs to.
+     *
+     * @param jwt The authenticated user's JWT
+     * @return A list of groups the user is a member of
+     */
+    @Operation(summary = "List My Groups", description = "Returns a list of all groups the current user is a member of.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved groups")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    @GetMapping
+    public ResponseEntity<List<GroupResponse>> listMyGroups(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(userService.getUserGroups(userId));
     }
 
     /**
