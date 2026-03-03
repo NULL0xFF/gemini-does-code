@@ -105,9 +105,9 @@
 				<div class="flex flex-col md:flex-row gap-8 items-start">
 					<!-- User Profile Sidebar -->
 					<div class="card w-full md:w-80 bg-base-100 shadow-xl overflow-hidden">
-						<div class="h-24 bg-primary"></div>
+						<div class="h-24 bg-gradient-to-r from-primary to-secondary"></div>
 						<div class="px-6 pb-6 text-center">
-							<div class="avatar -mt-12 mb-4 ring-offset-base-100 ring-offset-2 ring-primary ring">
+							<div class="avatar -mt-12 mb-4 ring-offset-base-100 ring-offset-4 ring-primary ring-4 rounded-full">
 								<div class="w-24 rounded-full bg-neutral">
 									<img src={getAvatarUrl(user.discordId, user.avatar)} alt={user.username} />
 								</div>
@@ -118,8 +118,7 @@
 							<div class="divider"></div>
 							
 							<div class="flex flex-col gap-2">
-								<button class="btn btn-outline btn-sm">Edit Profile</button>
-								<button class="btn btn-outline btn-sm">Discord Settings</button>
+								<a href="{base}/profile" class="btn btn-primary btn-outline btn-sm">Edit Profile</a>
 							</div>
 						</div>
 					</div>
