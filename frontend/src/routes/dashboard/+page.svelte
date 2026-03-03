@@ -7,10 +7,19 @@
 	let user = $state<any>(null);
 	let isLoading = $state(true);
 	let error = $state('');
+	let showSuccessToast = $state(false);
 
 	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 	onMount(async () => {
+		const params = new URLSearchParams(window.location.search);
+		if (params.get('login') === 'success') {
+			showSuccessToast = true;
+			// Clean up URL
+			window.history.replaceState({}, '', window.location.pathname);
+			setTimeout(() => { showSuccessToast = false; }, 5000);
+		}
+
 		token = localStorage.getItem('ark_token') || '';
 		if (!token) {
 			window.location.href = `${base}/login`;
@@ -71,6 +80,16 @@
 	<main class="flex-1 p-4 md:p-8">
 		<div class="container mx-auto max-w-5xl">
 			
+			{#if showSuccessToast}
+				<div class="toast toast-top toast-center z-[100]">
+					<div class="alert alert-success shadow-lg text-white">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<span>Welcome back! You have successfully logged in.</span>
+						<button class="btn btn-sm btn-ghost" onclick={() => showSuccessToast = false}>✕</button>
+					</div>
+				</div>
+			{/if}
+
 			{#if isLoading}
 				<div class="flex justify-center items-center h-64">
 					<span class="loading loading-spinner loading-lg text-primary"></span>
@@ -108,8 +127,8 @@
 					<div class="flex-1 w-full space-y-6">
 						<div class="card bg-base-100 shadow-xl">
 							<div class="card-body">
-								<h2 class="card-title text-2xl">Welcome to Ark Resolver, {user.username}!</h2>
-								<p class="opacity-80 mt-2">You're successfully authenticated. You can now start managing your group parties and coordinating your raids.</p>
+								<h2 class="card-title text-2xl">Dashboard Overview</h2>
+								<p class="opacity-80 mt-2">Welcome to your command center. Coordinate raids, manage your parties, and keep track of your team's status.</p>
 							</div>
 						</div>
 
@@ -130,18 +149,6 @@
 									<div class="card-actions justify-end mt-4">
 										<button class="btn btn-secondary">Browse LFG</button>
 									</div>
-								</div>
-							</div>
-						</div>
-
-						<div class="collapse collapse-arrow bg-base-100 shadow-xl">
-							<input type="radio" name="my-accordion-2" /> 
-							<div class="collapse-title text-xl font-medium">
-								View Authentication Token (JWT)
-							</div>
-							<div class="collapse-content overflow-x-auto"> 
-								<div class="mockup-code bg-neutral text-neutral-content p-0">
-									<pre data-prefix=">"><code>{token}</code></pre>
 								</div>
 							</div>
 						</div>

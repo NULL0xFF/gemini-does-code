@@ -37,7 +37,7 @@
 			
 			// Short delay for UX
 			setTimeout(() => {
-				window.location.href = `${base}/dashboard`;
+				window.location.href = `${base}/dashboard?login=success`;
 			}, 1000);
 
 		} catch (err) {
