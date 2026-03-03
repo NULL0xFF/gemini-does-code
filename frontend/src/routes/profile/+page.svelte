@@ -7,8 +7,9 @@
 	let user = $state<any>(null);
 	let isLoading = $state(true);
 	let error = $state('');
-    let newNickname = $state('');
+    let customNickname = $state('');
     let isSaving = $state(false);
+    let isSyncing = $state(false);
 
 	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -19,7 +20,11 @@
 			return;
 		}
 
-		try {
+		await fetchUserData();
+	});
+
+    async function fetchUserData() {
+        try {
 			const response = await fetch(`${apiUrl}/api/users/me`, {
 				headers: {
 					'Authorization': `Bearer ${token}`
@@ -35,14 +40,15 @@
 			}
 
 			user = await response.json();
-            newNickname = user.username;
+            // Fallback logic: if nickname is empty/null, use Discord username
+            customNickname = user.nickname || '';
 		} catch (err) {
 			console.error(err);
 			error = 'Failed to load user data.';
 		} finally {
 			isLoading = false;
 		}
-	});
+    }
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -50,20 +56,32 @@
 	}
 
     async function updateNickname() {
-        if (!newNickname || newNickname === user.username) return;
+        // Validation: only save if it's different from current nickname
+        if (customNickname === user.nickname) return;
         
         isSaving = true;
-        // Mocking backend update for now as requested (Frontend work only)
+        // Mocking backend update
         setTimeout(() => {
-            user.username = newNickname;
+            user.nickname = customNickname;
             isSaving = false;
-            alert('Nickname updated! (Note: This is frontend-only until backend is ready)');
+            alert('Nickname updated! (Mock)');
         }, 500);
+    }
+
+    async function syncDiscord() {
+        isSyncing = true;
+        // Mocking backend sync with Discord API
+        setTimeout(async () => {
+            // In a real scenario, this would trigger a backend refresh of Discord data
+            await fetchUserData();
+            isSyncing = false;
+            alert('Profile synced with Discord! (Mock)');
+        }, 800);
     }
 
     function deleteAccount() {
         if (confirm('Are you absolutely sure you want to delete your account? This action is irreversible.')) {
-            alert('Account deletion requested. (Frontend-only mock)');
+            alert('Account deletion requested. (Mock)');
             logout();
         }
     }
@@ -93,7 +111,7 @@
 		<div class="container mx-auto max-w-2xl">
 			
             <div class="flex items-center gap-4 mb-8">
-                <a href="{base}/dashboard" class="btn btn-ghost btn-circle">
+                <a href="{base}/dashboard" class="btn btn-ghost btn-circle" aria-label="Back to Dashboard">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
                 </a>
                 <h1 class="text-3xl font-bold text-ubuntu">User Profile</h1>
@@ -120,8 +138,11 @@
                                 </div>
                             </div>
                             <div class="mt-4">
-                                <h2 class="text-3xl font-bold">{user.username}</h2>
-                                <p class="opacity-60">Connected with Discord</p>
+                                <h2 class="text-3xl font-bold">{customNickname || user.username}</h2>
+                                <p class="opacity-60 flex items-center justify-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 127.14 96.36"><path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53C53.89,60,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.16,46,96.06,53C96.06,60,91.08,65.69,84.69,65.69Z"/></svg>
+                                    {user.username}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -139,14 +160,14 @@
                                     <input 
                                         id="nickname"
                                         type="text" 
-                                        placeholder="Enter new nickname" 
+                                        placeholder={user.username} 
                                         class="input input-bordered flex-1 font-nanum" 
-                                        bind:value={newNickname}
+                                        bind:value={customNickname}
                                         onkeydown={(e) => e.key === 'Enter' && updateNickname()}
                                     />
                                     <button 
                                         class="btn btn-primary" 
-                                        disabled={isSaving || newNickname === user.username}
+                                        disabled={isSaving || customNickname === (user.nickname || '')}
                                         onclick={updateNickname}
                                     >
                                         {#if isSaving}
@@ -156,13 +177,27 @@
                                     </button>
                                 </div>
                                 <label class="label" for="nickname">
-                                    <span class="label-text-alt opacity-60">This will change how you appear to others in parties.</span>
+                                    <span class="label-text-alt opacity-60">This changes your display name in Ark Resolver. Leaves empty to use Discord username.</span>
                                 </label>
                             </div>
 
                             <div class="divider"></div>
 
-                            <h3 class="text-xl font-bold mb-4 text-ubuntu">Discord Information</h3>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-bold text-ubuntu">Discord Information</h3>
+                                <button 
+                                    class="btn btn-ghost btn-sm gap-2" 
+                                    onclick={syncDiscord}
+                                    disabled={isSyncing}
+                                >
+                                    {#if isSyncing}
+                                        <span class="loading loading-spinner loading-xs"></span>
+                                    {:else}
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                                    {/if}
+                                    Sync with Discord
+                                </button>
+                            </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                 <div class="bg-base-200 p-3 rounded-lg">
                                     <span class="block opacity-60 uppercase text-xs font-bold mb-1">Discord Username</span>
