@@ -18,6 +18,10 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
+/**
+ * Service responsible for generating and parsing custom JSON Web Tokens (JWT).
+ * Used for stateless authentication across the application.
+ */
 @Service
 public class JwtTokenService {
 
@@ -41,6 +45,13 @@ public class JwtTokenService {
         }
     }
 
+    /**
+     * Generates a new JWT signed with HMAC-SHA256.
+     * Contains standard claims (issuer, iat, exp, sub) and custom claims for the user's Discord profile.
+     *
+     * @param user The user for whom the token is being generated
+     * @return The serialized JWT string
+     */
     public String generateToken(User user) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -60,6 +71,13 @@ public class JwtTokenService {
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
 
+    /**
+     * Parses a JWT string and extracts the "Issued At" (iat) timestamp.
+     * Useful for token whitelisting and session validation.
+     *
+     * @param token The raw JWT string
+     * @return The Instant representing when the token was issued
+     */
     public java.time.Instant extractIat(String token) {
         try {
             return com.nimbusds.jwt.SignedJWT.parse(token).getJWTClaimsSet().getIssueTime().toInstant();

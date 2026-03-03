@@ -9,6 +9,10 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * Represents a registered user within the Ark Resolver system.
+ * Users are authenticated primarily via Discord OAuth2.
+ */
 @Entity
 @Table(name = "users")
 public class User {

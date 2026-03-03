@@ -16,6 +16,10 @@ import java.util.Map;
 import java.util.UUID;
 import java.time.LocalDateTime;
 
+/**
+ * Service responsible for handling authentication flows, including interacting with
+ * the Discord OAuth2 API and managing user sessions within the database.
+ */
 @Service
 public class AuthService {
 
@@ -38,6 +42,14 @@ public class AuthService {
         this.jwtTokenService = jwtTokenService;
     }
 
+    /**
+     * Executes the complete Discord login flow.
+     * Exchanges an authorization code for an access token, fetches the user's profile,
+     * synchronizes the data with the database, and issues a new JWT.
+     *
+     * @param code The OAuth2 authorization code from Discord
+     * @return The generated JWT for the authenticated user
+     */
     public String loginWithDiscord(String code) {
         String discordAccessToken = fetchDiscordAccessToken(code);
         Map<String, Object> discordProfile = fetchDiscordUserProfile(discordAccessToken);
@@ -48,6 +60,13 @@ public class AuthService {
         return token;
     }
 
+    /**
+     * Refreshes the JWT for an existing user.
+     * Generates a new token and updates the user's last login and token issuance timestamp.
+     *
+     * @param userId The unique identifier of the user requesting a refresh
+     * @return A newly generated JWT
+     */
     public String refreshToken(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found during token refresh"));
