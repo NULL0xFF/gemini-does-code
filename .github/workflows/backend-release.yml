@@ -39,19 +39,23 @@ jobs:
             # Production Release
             FINAL_VERSION="v$BASE_VERSION"
             IS_PRERELEASE="false"
+            RELEASE_PREFIX="v$BASE_VERSION"
           elif [[ "$BRANCH_NAME" == "dev" ]]; then
             # Alpha Release
             FINAL_VERSION="v$BASE_VERSION-alpha.$SHORT_SHA"
             IS_PRERELEASE="true"
+            RELEASE_PREFIX="v$BASE_VERSION-alpha."
           else
             # Snapshot/Feature Release
             FINAL_VERSION="v$BASE_VERSION-snapshot.$SHORT_SHA"
             IS_PRERELEASE="true"
+            RELEASE_PREFIX="v$BASE_VERSION-snapshot."
           fi
           
           echo "FINAL_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
           echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_PREFIX=$RELEASE_PREFIX" >> $GITHUB_ENV
 
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
@@ -66,6 +70,17 @@ jobs:
           cp backend/server/build/libs/server-$BASE_VERSION.jar release-artifacts/ark-server-$FINAL_VERSION.jar
           cp backend/sample-plugin/build/libs/sample-plugin-$BASE_VERSION.jar release-artifacts/sample-plugin-$FINAL_VERSION.jar
           cp backend/plugin-api/build/libs/plugin-api-$BASE_VERSION.jar release-artifacts/plugin-api-$FINAL_VERSION.jar
+
+      - name: Cleanup Old Pre-releases
+        if: env.IS_PRERELEASE == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OLD_RELEASES=$(gh release list --json tagName -q ".[] | select(.tagName | startswith(\"$RELEASE_PREFIX\")) | .tagName")
+          for RELEASE in $OLD_RELEASES; do
+            echo "Deleting old release: $RELEASE"
+            gh release delete "$RELEASE" --cleanup-tag -y || true
+          done
 
       - name: Create Release
         env:
