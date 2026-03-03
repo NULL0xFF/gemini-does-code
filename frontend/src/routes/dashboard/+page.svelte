@@ -112,7 +112,7 @@
 									<img src={getAvatarUrl(user.discordId, user.avatar)} alt={user.username} />
 								</div>
 							</div>
-							<h2 class="text-2xl font-bold">{user.username}</h2>
+							<h2 class="text-2xl font-bold">{user.nickname || user.username}</h2>
 							<p class="text-sm opacity-60">ID: {user.discordId}</p>
 							
 							<div class="divider"></div>
@@ -127,7 +127,7 @@
 					<div class="flex-1 w-full space-y-6">
 						<div class="card bg-base-100 shadow-xl">
 							<div class="card-body">
-								<h2 class="card-title text-2xl">Dashboard Overview</h2>
+								<h2 class="card-title text-2xl text-ubuntu">Welcome to Ark Resolver, {user.nickname || user.username}!</h2>
 								<p class="opacity-80 mt-2">Welcome to your command center. Coordinate raids, manage your parties, and keep track of your team's status.</p>
 							</div>
 						</div>

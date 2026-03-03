@@ -33,7 +33,7 @@
 
 			if (!response.ok) {
 				if (response.status === 401) {
-					logout();
+					logout('session_invalid');
 					return;
 				}
 				throw new Error('Failed to fetch user profile');
@@ -50,9 +50,11 @@
 		}
     }
 
-	function logout() {
+	function logout(reason?: string) {
 		localStorage.removeItem('ark_token');
-		window.location.href = `${base}/`;
+        const reasonStr = (typeof reason === 'string') ? reason : '';
+		const url = reasonStr ? `${base}/login?error=${reasonStr}` : `${base}/`;
+		window.location.href = url;
 	}
 
     async function updateNickname() {
@@ -60,29 +62,68 @@
         if (customNickname === user.nickname) return;
         
         isSaving = true;
-        // Mocking backend update
-        setTimeout(() => {
+        try {
+            const response = await fetch(`${apiUrl}/api/users/me/nickname`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ nickname: customNickname })
+            });
+
+            if (!response.ok) throw new Error('Failed to update nickname');
+
             user.nickname = customNickname;
+            alert('Nickname updated successfully!');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to update nickname.');
+        } finally {
             isSaving = false;
-            alert('Nickname updated! (Mock)');
-        }, 500);
+        }
     }
 
     async function syncDiscord() {
         isSyncing = true;
-        // Mocking backend sync with Discord API
-        setTimeout(async () => {
-            // In a real scenario, this would trigger a backend refresh of Discord data
+        try {
+            const response = await fetch(`${apiUrl}/api/users/me/sync`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to sync with Discord');
+
             await fetchUserData();
+            alert('Profile synced with Discord!');
+        } catch (err) {
+            console.error(err);
+            alert('Failed to sync with Discord.');
+        } finally {
             isSyncing = false;
-            alert('Profile synced with Discord! (Mock)');
-        }, 800);
+        }
     }
 
-    function deleteAccount() {
+    async function deleteAccount() {
         if (confirm('Are you absolutely sure you want to delete your account? This action is irreversible.')) {
-            alert('Account deletion requested. (Mock)');
-            logout();
+            try {
+                const response = await fetch(`${apiUrl}/api/users/me`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to delete account');
+
+                alert('Account deleted successfully. We hope to see you again!');
+                logout();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to delete account.');
+            }
         }
     }
 
@@ -177,7 +218,7 @@
                                     </button>
                                 </div>
                                 <label class="label" for="nickname">
-                                    <span class="label-text-alt opacity-60">This changes your display name in Ark Resolver. Leaves empty to use Discord username.</span>
+                                    <span class="label-text-alt opacity-60">This changes your display name in Ark Resolver. Leave empty to use Discord username.</span>
                                 </label>
                             </div>
 
