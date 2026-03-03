@@ -50,9 +50,10 @@
 		}
 	});
 
-	function logout(reason?: string) {
+	function logout(reason?: any) {
 		localStorage.removeItem('ark_token');
-		const url = reason ? `${base}/login?error=${reason}` : `${base}/`;
+		const reasonStr = (typeof reason === 'string') ? reason : '';
+		const url = reasonStr ? `${base}/login?error=${reasonStr}` : `${base}/`;
 		window.location.href = url;
 	}
 
