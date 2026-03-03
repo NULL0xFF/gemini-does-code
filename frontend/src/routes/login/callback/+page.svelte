@@ -33,11 +33,14 @@
 			// Store the JWT token securely
 			localStorage.setItem('ark_token', data.token);
 			
-			status = 'Success! Redirecting to dashboard...';
+            const isSync = sessionStorage.getItem('ark_sync_redirect') === 'true';
+            sessionStorage.removeItem('ark_sync_redirect');
+
+			status = isSync ? 'Sync successful! Returning to profile...' : 'Success! Redirecting to dashboard...';
 			
 			// Short delay for UX
 			setTimeout(() => {
-				window.location.href = `${base}/dashboard?login=success`;
+				window.location.href = isSync ? `${base}/profile?sync=success` : `${base}/dashboard?login=success`;
 			}, 1000);
 
 		} catch (err) {

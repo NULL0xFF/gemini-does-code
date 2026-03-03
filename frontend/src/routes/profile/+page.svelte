@@ -10,10 +10,18 @@
     let customNickname = $state('');
     let isSaving = $state(false);
     let isSyncing = $state(false);
+    let showSyncToast = $state(false);
 
 	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 	onMount(async () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('sync') === 'success') {
+            showSyncToast = true;
+            window.history.replaceState({}, '', window.location.pathname);
+            setTimeout(() => { showSyncToast = false; }, 5000);
+        }
+
 		token = localStorage.getItem('ark_token') || '';
 		if (!token) {
 			window.location.href = `${base}/login`;
@@ -87,21 +95,17 @@
     async function syncDiscord() {
         isSyncing = true;
         try {
-            const response = await fetch(`${apiUrl}/api/users/me/sync`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to sync with Discord');
-
-            await fetchUserData();
-            alert('Profile synced with Discord!');
+            const response = await fetch(`${apiUrl}/api/auth/discord/url`);
+            if (!response.ok) throw new Error('Failed to get auth URL');
+            const data = await response.json();
+            
+            // Mark that we are syncing so the callback knows where to return
+            sessionStorage.setItem('ark_sync_redirect', 'true');
+            
+            window.location.href = data.url;
         } catch (err) {
             console.error(err);
-            alert('Failed to sync with Discord.');
-        } finally {
+            alert('Failed to initiate sync with Discord.');
             isSyncing = false;
         }
     }
@@ -151,6 +155,16 @@
 	<main class="flex-1 p-4 md:p-8">
 		<div class="container mx-auto max-w-2xl">
 			
+            {#if showSyncToast}
+				<div class="toast toast-top toast-center z-[100]">
+					<div class="alert alert-success shadow-lg text-white">
+						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+						<span>Profile successfully synced with Discord!</span>
+						<button class="btn btn-sm btn-ghost" onclick={() => showSyncToast = false}>✕</button>
+					</div>
+				</div>
+			{/if}
+
             <div class="flex items-center gap-4 mb-8">
                 <a href="{base}/dashboard" class="btn btn-ghost btn-circle" aria-label="Back to Dashboard">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
