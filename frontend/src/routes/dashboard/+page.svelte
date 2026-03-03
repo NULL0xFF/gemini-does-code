@@ -9,12 +9,18 @@
 	let isLoading = $state(true);
 	let error = $state('');
 	let showSuccessToast = $state(false);
+	let successMessage = $state('');
 
 	onMount(async () => {
 		const params = new URLSearchParams(window.location.search);
 		if (params.get('login') === 'success') {
+			successMessage = 'Welcome back! You have successfully logged in.';
 			showSuccessToast = true;
-			// Clean up URL
+			window.history.replaceState({}, '', window.location.pathname);
+			setTimeout(() => { showSuccessToast = false; }, 5000);
+		} else if (params.get('group_created') === 'success') {
+			successMessage = 'Your new group has been created successfully!';
+			showSuccessToast = true;
 			window.history.replaceState({}, '', window.location.pathname);
 			setTimeout(() => { showSuccessToast = false; }, 5000);
 		}
@@ -73,7 +79,7 @@
 				<div class="toast toast-top toast-center z-[100]">
 					<div class="alert alert-success shadow-lg text-white">
 						<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-						<span>Welcome back! You have successfully logged in.</span>
+						<span>{successMessage}</span>
 						<button class="btn btn-sm btn-ghost" onclick={() => showSuccessToast = false}>✕</button>
 					</div>
 				</div>
@@ -121,19 +127,19 @@
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
 							<div class="card bg-base-100 shadow-xl border-t-4 border-info">
 								<div class="card-body">
-									<h2 class="card-title">My Parties</h2>
-									<p class="opacity-70">Assemble your group and start your journey.</p>
+									<h2 class="card-title text-ubuntu">My Groups</h2>
+									<p class="opacity-70 text-sm">Manage your static rosters and view member availability heatmap.</p>
 									<div class="card-actions justify-end mt-4">
-										<button class="btn btn-primary">Create Party</button>
+										<a href="{base}/groups/create" class="btn btn-primary btn-sm md:btn-md">Create Group</a>
 									</div>
 								</div>
 							</div>
 							<div class="card bg-base-100 shadow-xl border-t-4 border-secondary">
 								<div class="card-body">
-									<h2 class="card-title">Join a Raid</h2>
-									<p class="opacity-70">Find active parties looking for your specific role.</p>
+									<h2 class="card-title text-ubuntu">Join a Group</h2>
+									<p class="opacity-70 text-sm">Use an invite code to join an existing group roster.</p>
 									<div class="card-actions justify-end mt-4">
-										<button class="btn btn-secondary">Browse LFG</button>
+										<button class="btn btn-secondary btn-sm md:btn-md">Enter Code</button>
 									</div>
 								</div>
 							</div>
