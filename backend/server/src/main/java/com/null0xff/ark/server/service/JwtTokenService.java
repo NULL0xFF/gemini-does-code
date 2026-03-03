@@ -59,4 +59,12 @@ public class JwtTokenService {
 
         return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
     }
+
+    public java.time.Instant extractIat(String token) {
+        try {
+            return com.nimbusds.jwt.SignedJWT.parse(token).getJWTClaimsSet().getIssueTime().toInstant();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse token for IAT", e);
+        }
+    }
 }

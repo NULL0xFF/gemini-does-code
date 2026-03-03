@@ -43,7 +43,7 @@ public class AuthService {
         Map<String, Object> discordProfile = fetchDiscordUserProfile(discordAccessToken);
         User user = syncUserWithDatabase(discordProfile);
         String token = jwtTokenService.generateToken(user);
-        user.setCurrentToken(token);
+        user.setLastIssuedAt(jwtTokenService.extractIat(token));
         userRepository.save(user);
         return token;
     }
@@ -53,7 +53,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found during token refresh"));
         user.setLastLogin(LocalDateTime.now());
         String newToken = jwtTokenService.generateToken(user);
-        user.setCurrentToken(newToken);
+        user.setLastIssuedAt(jwtTokenService.extractIat(newToken));
         userRepository.save(user);
         return newToken;
     }

@@ -31,8 +31,8 @@ public class User {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
 
-    @Column(name = "current_token", length = 1024)
-    private String currentToken;
+    @Column(name = "last_issued_at")
+    private java.time.Instant lastIssuedAt;
 
     public User() {
         this.createdAt = LocalDateTime.now();
@@ -88,11 +88,11 @@ public class User {
         this.lastLogin = lastLogin;
     }
 
-    public String getCurrentToken() {
-        return currentToken;
+    public java.time.Instant getLastIssuedAt() {
+        return lastIssuedAt;
     }
 
-    public void setCurrentToken(String currentToken) {
-        this.currentToken = currentToken;
+    public void setLastIssuedAt(java.time.Instant lastIssuedAt) {
+        this.lastIssuedAt = lastIssuedAt;
     }
 }
