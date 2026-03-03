@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -91,8 +93,19 @@ jobs:
             PRERELEASE_FLAG="--prerelease"
           fi
           
-          # Use GitHub CLI to auto-generate release notes based on commits since previous tag
+          echo "## Changelog for ${{ github.ref_name }}" > release_notes.md
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            echo "### Stable Release Updates" >> release_notes.md
+            git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md
+          elif [[ "${{ github.ref_name }}" == "dev" ]]; then
+            echo "### Changes since main" >> release_notes.md
+            git log origin/main..HEAD --pretty=format:"* %s (%h)" >> release_notes.md || git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md
+          else
+            echo "### Changes in this feature branch" >> release_notes.md
+            git log origin/dev..HEAD --pretty=format:"* %s (%h)" >> release_notes.md || git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md
+          fi
+          
           gh release create "$FINAL_VERSION" $PRERELEASE_FLAG \
             --title "Backend Release $FINAL_VERSION" \
-            --generate-notes \
+            --notes-file release_notes.md \
             release-artifacts/*.jar
