@@ -18,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import javax.crypto.spec.SecretKeySpec;
 import java.util.List;
 
+import com.null0xff.ark.server.entity.User;
 import com.null0xff.ark.server.repository.UserRepository;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
@@ -68,8 +69,12 @@ public class SecurityConfig {
                             String userIdStr = token.getSubject();
                             try {
                                 UUID userId = UUID.fromString(userIdStr);
-                                if (!userRepository.existsById(userId)) {
-                                    throw new BadCredentialsException("User no longer exists in database");
+                                User user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BadCredentialsException("User no longer exists"));
+                                
+                                // Token Whitelist Check: Compare the raw token value
+                                if (user.getCurrentToken() == null || !user.getCurrentToken().equals(token.getTokenValue())) {
+                                    throw new BadCredentialsException("Token has been invalidated or superseded");
                                 }
                             } catch (IllegalArgumentException e) {
                                 throw new BadCredentialsException("Invalid User ID in token");

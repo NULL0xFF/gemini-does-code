@@ -42,15 +42,20 @@ public class AuthService {
         String discordAccessToken = fetchDiscordAccessToken(code);
         Map<String, Object> discordProfile = fetchDiscordUserProfile(discordAccessToken);
         User user = syncUserWithDatabase(discordProfile);
-        return jwtTokenService.generateToken(user);
+        String token = jwtTokenService.generateToken(user);
+        user.setCurrentToken(token);
+        userRepository.save(user);
+        return token;
     }
 
     public String refreshToken(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found during token refresh"));
         user.setLastLogin(LocalDateTime.now());
+        String newToken = jwtTokenService.generateToken(user);
+        user.setCurrentToken(newToken);
         userRepository.save(user);
-        return jwtTokenService.generateToken(user);
+        return newToken;
     }
 
     private String fetchDiscordAccessToken(String code) {
