@@ -26,7 +26,7 @@
 
 			if (!response.ok) {
 				if (response.status === 401) {
-					logout();
+					logout('session_invalid');
 					return;
 				}
 				throw new Error('Failed to fetch user profile');
@@ -41,9 +41,10 @@
 		}
 	});
 
-	function logout() {
+	function logout(reason?: string) {
 		localStorage.removeItem('ark_token');
-		window.location.href = `${base}/`;
+		const url = reason ? `${base}/login?error=${reason}` : `${base}/`;
+		window.location.href = url;
 	}
 
 	function getAvatarUrl(discordId: string, avatarHash: string) {
