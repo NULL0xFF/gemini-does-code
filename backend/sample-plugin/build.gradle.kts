@@ -13,7 +13,7 @@ tasks.jar {
         attributes(
             "Plugin-Class" to "com.null0xff.ark.plugin.sample.SamplePlugin",
             "Plugin-Id" to "sample-plugin",
-            "Plugin-Version" to "0.0.1",
+            "Plugin-Version" to project.version,
             "Plugin-Provider" to "null0xff"
         )
     }

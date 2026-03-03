@@ -3,6 +3,7 @@ name: Backend Release
 on:
   push:
     branches:
+      - main
       - dev
       - feature/backend
     paths:
@@ -26,6 +27,32 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Calculate Version
+        id: versioning
+        run: |
+          # Extract base version from build.gradle.kts
+          BASE_VERSION=$(grep 'version =' backend/build.gradle.kts | cut -d '"' -f 2)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BRANCH_NAME=${{ github.ref_name }}
+          
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            # Production Release
+            FINAL_VERSION="v$BASE_VERSION"
+            IS_PRERELEASE="false"
+          elif [[ "$BRANCH_NAME" == "dev" ]]; then
+            # Alpha Release
+            FINAL_VERSION="v$BASE_VERSION-alpha.$SHORT_SHA"
+            IS_PRERELEASE="true"
+          else
+            # Snapshot/Feature Release
+            FINAL_VERSION="v$BASE_VERSION-snapshot.$SHORT_SHA"
+            IS_PRERELEASE="true"
+          fi
+          
+          echo "FINAL_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
+          echo "IS_PRERELEASE=$IS_PRERELEASE" >> $GITHUB_ENV
+          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+
       - name: Grant execute permission for gradlew
         run: chmod +x backend/gradlew
 
@@ -36,16 +63,20 @@ jobs:
       - name: Prepare Artifacts
         run: |
           mkdir -p release-artifacts
-          cp backend/server/build/libs/server-0.0.1-SNAPSHOT.jar release-artifacts/ark-server.jar
-          cp backend/sample-plugin/build/libs/sample-plugin-0.0.1-SNAPSHOT.jar release-artifacts/sample-plugin.jar
-          cp backend/plugin-api/build/libs/plugin-api-0.0.1-SNAPSHOT.jar release-artifacts/plugin-api.jar
+          cp backend/server/build/libs/server-$BASE_VERSION.jar release-artifacts/ark-server-$FINAL_VERSION.jar
+          cp backend/sample-plugin/build/libs/sample-plugin-$BASE_VERSION.jar release-artifacts/sample-plugin-$FINAL_VERSION.jar
+          cp backend/plugin-api/build/libs/plugin-api-$BASE_VERSION.jar release-artifacts/plugin-api-$FINAL_VERSION.jar
 
       - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME="backend-$(date +'%Y%m%d-%H%M%S')"
-          gh release create "$TAG_NAME" \
-            --title "Backend Release - $(date +'%Y-%m-%d %H:%M')" \
+          PRERELEASE_FLAG=""
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          
+          gh release create "$FINAL_VERSION" $PRERELEASE_FLAG \
+            --title "Backend Release $FINAL_VERSION" \
             --notes "Automated backend build from branch ${{ github.ref_name }}. Includes server, API, and sample plugin." \
             release-artifacts/*.jar
