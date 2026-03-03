@@ -158,7 +158,6 @@
 				</div>
 			{:else}
 				<div class="space-y-6">
-					<!-- Profile Card -->
 					<div class="card bg-base-100 shadow-xl overflow-hidden">
                         <div class="h-32 bg-gradient-to-r from-primary via-accent to-secondary"></div>
                         <div class="card-body -mt-16 items-center text-center">
@@ -177,7 +176,6 @@
                         </div>
                     </div>
 
-                    <!-- Settings Sections -->
                     <div class="card bg-base-100 shadow-xl">
                         <div class="card-body">
                             <h3 class="text-xl font-bold mb-4 text-ubuntu">Account Settings</h3>

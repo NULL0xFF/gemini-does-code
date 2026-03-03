@@ -91,7 +91,6 @@
 				</div>
 			{:else}
 				<div class="flex flex-col md:flex-row gap-8 items-start">
-					<!-- User Profile Sidebar -->
 					<div class="card w-full md:w-80 bg-base-100 shadow-xl overflow-hidden">
 						<div class="h-24 bg-gradient-to-r from-primary to-secondary"></div>
 						<div class="px-6 pb-6 text-center">
@@ -111,7 +110,6 @@
 						</div>
 					</div>
 
-					<!-- Main Content -->
 					<div class="flex-1 w-full space-y-6">
 						<div class="card bg-base-100 shadow-xl">
 							<div class="card-body">

@@ -41,7 +41,6 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
             errorData = { message: 'An unknown error occurred.' };
         }
 
-        // Global 401 handling - Force logout on invalid session
         if (response.status === 401) {
             localStorage.removeItem('ark_token');
             window.location.href = `${base}/login?error=session_invalid`;
@@ -55,7 +54,6 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
 export async function fetchJson<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const response = await fetchApi(endpoint, options);
-    // Explicitly check for 204 No Content to avoid JSON parsing errors
     if (response.status === 204) {
         return {} as T;
     }

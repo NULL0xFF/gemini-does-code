@@ -54,3 +54,5 @@ cd frontend
 *   **Commit Messages:** The repository strictly adheres to **Conventional Commits** format including an emoji.
     *   Format: `type: :emoji: message` (e.g., `feat: ✨ Initialize frontend project`)
 *   **Continuous Integration (CI):** A GitHub Action (`frontend-ci.yml`) is configured to run automatically on any PR to the `dev` branch that includes changes in the `frontend/` directory. It ensures that the application builds successfully using Node.js 20.
+*   **Code Style:** Apply [Google Style Guides](https://google.github.io/styleguide/) as the default code style for the current project.
+*   **Commenting:** Add only necessary comments on source code. Do not add comments explaining updates (e.g., "// Update logic"). Always write JavaDoc style comments for required code blocks and APIs.
