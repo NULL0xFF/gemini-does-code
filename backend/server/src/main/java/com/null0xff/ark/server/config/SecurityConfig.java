@@ -72,8 +72,6 @@ public class SecurityConfig {
                                 User user = userRepository.findById(userId)
                                         .orElseThrow(() -> new BadCredentialsException("User no longer exists"));
                                 
-                                // Token Whitelist Check: Compare the IAT (Issued At) timestamp
-                                // Use truncatedTo(ChronoUnit.SECONDS) to avoid precision mismatches
                                 if (user.getLastIssuedAt() == null || 
                                     !user.getLastIssuedAt().equals(token.getIssuedAt().truncatedTo(java.time.temporal.ChronoUnit.SECONDS))) {
                                     throw new BadCredentialsException("Token has been invalidated or superseded");

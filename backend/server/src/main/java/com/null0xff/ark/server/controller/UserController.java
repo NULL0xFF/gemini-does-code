@@ -94,7 +94,6 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Sync completed successfully (mock)")
     @PostMapping("/me/sync")
     public ResponseEntity<Void> syncProfile(@AuthenticationPrincipal Jwt jwt) {
-        // TODO: Implement actual Discord API sync logic if needed
         return ResponseEntity.ok().build();
     }
 }
