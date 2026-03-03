@@ -27,6 +27,8 @@ public class User {
     @Column(nullable = false)
     private String username;
 
+    private String nickname;
+
     private String avatar;
 
     @Column(name = "created_at", updatable = false)
@@ -66,6 +68,14 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
 
     public String getAvatar() {

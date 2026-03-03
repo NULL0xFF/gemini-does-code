@@ -1,15 +1,19 @@
 package com.null0xff.ark.server.controller;
 
+import com.null0xff.ark.server.dto.NicknameRequest;
+import com.null0xff.ark.server.entity.User;
+import com.null0xff.ark.server.repository.UserRepository;
+import com.null0xff.ark.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Controller for handling user-specific operations.
@@ -20,23 +24,77 @@ import java.util.Map;
 @Tag(name = "User Profile", description = "Endpoints for retrieving and managing user profile information")
 public class UserController {
 
+    private final UserService userService;
+    private final UserRepository userRepository;
+
+    public UserController(UserService userService, UserRepository userRepository) {
+        this.userService = userService;
+        this.userRepository = userRepository;
+    }
+
     /**
      * Retrieves the profile information of the currently authenticated user.
-     * Extracts data directly from the verified JWT claims.
      *
      * @param jwt The decoded JWT token representing the current user
-     * @return A map containing the user's ID, Discord ID, username, and avatar hash
+     * @return A map containing the user's profile details
      */
     @Operation(summary = "Get Current User", description = "Returns the profile details of the user associated with the provided JWT access token.")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user profile")
     @ApiResponse(responseCode = "401", description = "Unauthorized - Missing or invalid token")
     @GetMapping("/me")
-    public Map<String, Object> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
-        return Map.of(
-                "id", jwt.getSubject(),
-                "discordId", jwt.getClaim("discordId"),
-                "username", jwt.getClaim("username"),
-                "avatar", jwt.getClaim("avatar")
-        );
+    public ResponseEntity<Map<String, Object>> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(Map.of(
+                "id", user.getId(),
+                "discordId", user.getDiscordId(),
+                "username", user.getUsername(),
+                "nickname", user.getNickname() != null ? user.getNickname() : "",
+                "avatar", user.getAvatar()
+        ));
+    }
+
+    /**
+     * Updates the custom nickname for the currently authenticated user.
+     *
+     * @param jwt     The current user's JWT
+     * @param request The request body containing the new nickname
+     * @return 200 OK if successful
+     */
+    @Operation(summary = "Update Nickname", description = "Sets a custom display name for the user.")
+    @ApiResponse(responseCode = "200", description = "Nickname updated successfully")
+    @PutMapping("/me/nickname")
+    public ResponseEntity<Void> updateNickname(@AuthenticationPrincipal Jwt jwt, @RequestBody NicknameRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.updateNickname(userId, request.getNickname());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Deletes the currently authenticated user's account.
+     *
+     * @param jwt The current user's JWT
+     * @return 200 OK if successful
+     */
+    @Operation(summary = "Delete Account", description = "Permanently deletes the user's account and all associated data.")
+    @ApiResponse(responseCode = "200", description = "Account deleted successfully")
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        userService.deleteAccount(userId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Placeholder for syncing the user's profile with Discord.
+     */
+    @Operation(summary = "Sync with Discord", description = "Placeholder endpoint for manually syncing Discord profile data (username, avatar).")
+    @ApiResponse(responseCode = "200", description = "Sync completed successfully (mock)")
+    @PostMapping("/me/sync")
+    public ResponseEntity<Void> syncProfile(@AuthenticationPrincipal Jwt jwt) {
+        // TODO: Implement actual Discord API sync logic if needed
+        return ResponseEntity.ok().build();
     }
 }
