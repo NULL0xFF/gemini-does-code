@@ -129,7 +129,7 @@
                     <!-- Settings Sections -->
                     <div class="card bg-base-100 shadow-xl">
                         <div class="card-body">
-                            <h3 class="text-xl font-bold mb-4">Account Settings</h3>
+                            <h3 class="text-xl font-bold mb-4 text-ubuntu">Account Settings</h3>
                             
                             <div class="form-control w-full">
                                 <label class="label" for="nickname">
@@ -140,8 +140,9 @@
                                         id="nickname"
                                         type="text" 
                                         placeholder="Enter new nickname" 
-                                        class="input input-bordered flex-1" 
+                                        class="input input-bordered flex-1 font-nanum" 
                                         bind:value={newNickname}
+                                        onkeydown={(e) => e.key === 'Enter' && updateNickname()}
                                     />
                                     <button 
                                         class="btn btn-primary" 
@@ -161,8 +162,22 @@
 
                             <div class="divider"></div>
 
-                            <div class="bg-error/10 border border-error/20 p-6 rounded-lg">
-                                <h4 class="text-error font-bold text-lg mb-2">Danger Zone</h4>
+                            <h3 class="text-xl font-bold mb-4 text-ubuntu">Discord Information</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                                <div class="bg-base-200 p-3 rounded-lg">
+                                    <span class="block opacity-60 uppercase text-xs font-bold mb-1">Discord Username</span>
+                                    <span class="font-mono">{user.username}</span>
+                                </div>
+                                <div class="bg-base-200 p-3 rounded-lg">
+                                    <span class="block opacity-60 uppercase text-xs font-bold mb-1">Discord User ID</span>
+                                    <span class="font-mono">{user.discordId}</span>
+                                </div>
+                            </div>
+
+                            <div class="divider"></div>
+
+                            <div class="bg-error/10 border border-error/20 p-6 rounded-lg mt-4">
+                                <h4 class="text-error font-bold text-lg mb-2 text-ubuntu">Danger Zone</h4>
                                 <p class="text-sm opacity-80 mb-4">Deleting your account will remove all your data and dissociate your Discord account from Ark Resolver.</p>
                                 <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteAccount}>
                                     Delete My Account
