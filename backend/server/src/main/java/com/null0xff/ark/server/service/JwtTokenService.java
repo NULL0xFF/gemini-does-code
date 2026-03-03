@@ -31,6 +31,8 @@ public class JwtTokenService {
 
     @PostConstruct
     public void init() {
+        String workingDir = System.getProperty("user.dir");
+        logger.info("Current Working Directory: {}", workingDir);
         logger.info("JWT Token Service initialized with expiration: {}ms", expirationMs);
         if (jwtSecret.equals("your-256-bit-secret-key-goes-here-change-me")) {
             logger.warn("JWT Secret is using the DEFAULT value. Please check your .env file!");
