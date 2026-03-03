@@ -2,6 +2,7 @@
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark;
 }
+@plugin "@tailwindcss/forms";
 
 @theme {
   --font-sans: "Ubuntu", "NanumSquareNeo", ui-sans-serif, system-ui, sans-serif;

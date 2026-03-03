@@ -180,16 +180,14 @@
                         <div class="card-body">
                             <h3 class="text-xl font-bold mb-4 text-ubuntu">Account Settings</h3>
                             
-                            <div class="form-control w-full">
-                                <label class="label" for="nickname">
-                                    <span class="label-text font-semibold">Custom Nickname</span>
-                                </label>
+                            <div class="w-full">
+                                <label for="nickname" class="block text-sm font-bold text-ubuntu mb-2">Custom Nickname</label>
                                 <div class="flex flex-col sm:flex-row gap-2">
                                     <input 
                                         id="nickname"
                                         type="text" 
                                         placeholder={user.username} 
-                                        class="input input-bordered flex-1 font-nanum" 
+                                        class="input input-bordered flex-1 font-neo focus:ring-primary" 
                                         bind:value={customNickname}
                                         onkeydown={(e) => e.key === 'Enter' && updateNickname()}
                                     />
@@ -204,9 +202,7 @@
                                         Save Changes
                                     </button>
                                 </div>
-                                <label class="label" for="nickname">
-                                    <span class="label-text-alt opacity-60">This changes your display name in Ark Resolver. Leave empty to use Discord username.</span>
-                                </label>
+                                <p class="text-xs opacity-60 mt-2">This changes your display name in Ark Resolver. Leave empty to use Discord username.</p>
                             </div>
 
                             <div class="divider"></div>

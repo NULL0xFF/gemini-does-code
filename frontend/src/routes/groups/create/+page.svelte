@@ -65,30 +65,28 @@
 
 			<div class="card bg-base-100 shadow-xl">
 				<div class="card-body">
-					<div class="form-control w-full">
-						<label class="label" for="group-name">
-							<span class="label-text font-bold text-ubuntu">Group Name</span>
-						</label>
-						<input 
-							id="group-name"
-							type="text" 
-							placeholder="e.g., Friday Night Static" 
-							class="input input-bordered w-full font-neo" 
-							bind:value={groupName}
-							onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
-						/>
-					</div>
+					<div class="space-y-6">
+						<div>
+							<label for="group-name" class="block text-sm font-bold text-ubuntu mb-2">Group Name</label>
+							<input 
+								id="group-name"
+								type="text" 
+								placeholder="e.g., Friday Night Static" 
+								class="input input-bordered w-full font-neo focus:ring-primary" 
+								bind:value={groupName}
+								onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
+							/>
+						</div>
 
-					<div class="form-control w-full mt-4">
-						<label class="label" for="description">
-							<span class="label-text font-bold text-ubuntu">Description (Optional)</span>
-						</label>
-						<textarea 
-							id="description"
-							class="textarea textarea-bordered h-24 font-neo" 
-							placeholder="Describe your group's goals or schedule..."
-							bind:value={description}
-						></textarea>
+						<div>
+							<label for="description" class="block text-sm font-bold text-ubuntu mb-2">Description (Optional)</label>
+							<textarea 
+								id="description"
+								class="textarea textarea-bordered h-32 w-full font-neo focus:ring-primary" 
+								placeholder="Describe your group's goals or schedule..."
+								bind:value={description}
+							></textarea>
+						</div>
 					</div>
 
 					<div class="card-actions justify-end mt-8">
