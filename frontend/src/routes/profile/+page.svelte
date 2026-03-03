@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { fetchJson, fetchApi, ApiError } from '$lib/api';
 
 	let token = $state('');
 	let user = $state<any>(null);
@@ -11,8 +12,6 @@
     let isSaving = $state(false);
     let isSyncing = $state(false);
     let showSyncToast = $state(false);
-
-	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 	onMount(async () => {
         const params = new URLSearchParams(window.location.search);
@@ -33,34 +32,23 @@
 
     async function fetchUserData() {
         try {
-			const response = await fetch(`${apiUrl}/api/users/me`, {
-				headers: {
-					'Authorization': `Bearer ${token}`
-				}
-			});
-
-			if (!response.ok) {
-				if (response.status === 401) {
-					logout('session_invalid');
-					return;
-				}
-				throw new Error('Failed to fetch user profile');
-			}
-
-			user = await response.json();
+			user = await fetchJson<any>('/api/users/me');
             // Fallback logic: if nickname is empty/null, use Discord username
             customNickname = user.nickname || '';
 		} catch (err) {
 			console.error(err);
-			error = 'Failed to load user data.';
+			// 401 is handled globally by fetchJson
+			if (!(err instanceof ApiError && err.status === 401)) {
+				error = 'Failed to load user data.';
+			}
 		} finally {
 			isLoading = false;
 		}
     }
 
-	function logout(reason?: string) {
+	function logout(reason?: any) {
 		localStorage.removeItem('ark_token');
-        const reasonStr = (typeof reason === 'string') ? reason : '';
+		const reasonStr = (typeof reason === 'string') ? reason : '';
 		const url = reasonStr ? `${base}/login?error=${reasonStr}` : `${base}/`;
 		window.location.href = url;
 	}
@@ -71,16 +59,10 @@
         
         isSaving = true;
         try {
-            const response = await fetch(`${apiUrl}/api/users/me/nickname`, {
+            await fetchApi('/api/users/me/nickname', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify({ nickname: customNickname })
             });
-
-            if (!response.ok) throw new Error('Failed to update nickname');
 
             user.nickname = customNickname;
             alert('Nickname updated successfully!');
@@ -95,9 +77,7 @@
     async function syncDiscord() {
         isSyncing = true;
         try {
-            const response = await fetch(`${apiUrl}/api/auth/discord/url`);
-            if (!response.ok) throw new Error('Failed to get auth URL');
-            const data = await response.json();
+            const data = await fetchJson<{ url: string }>('/api/auth/discord/url');
             
             // Mark that we are syncing so the callback knows where to return
             sessionStorage.setItem('ark_sync_redirect', 'true');
@@ -113,14 +93,9 @@
     async function deleteAccount() {
         if (confirm('Are you absolutely sure you want to delete your account? This action is irreversible.')) {
             try {
-                const response = await fetch(`${apiUrl}/api/users/me`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                await fetchApi('/api/users/me', {
+                    method: 'DELETE'
                 });
-
-                if (!response.ok) throw new Error('Failed to delete account');
 
                 alert('Account deleted successfully. We hope to see you again!');
                 logout();

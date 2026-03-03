@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
+	import { fetchJson } from '$lib/api';
 
 	let status = $state('Authenticating with Discord...');
 	let error = $state('');
@@ -15,20 +16,10 @@
 		}
 
 		try {
-			const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-			const response = await fetch(`${apiUrl}/api/auth/discord`, {
+			const data = await fetchJson<{ token: string }>('/api/auth/discord', {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
 				body: JSON.stringify({ code })
 			});
-
-			if (!response.ok) {
-				throw new Error('Authentication failed');
-			}
-
-			const data = await response.json();
 			
 			// Store the JWT token securely
 			localStorage.setItem('ark_token', data.token);

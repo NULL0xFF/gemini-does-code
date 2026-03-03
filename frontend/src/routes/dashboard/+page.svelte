@@ -2,14 +2,13 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { fetchJson, ApiError } from '$lib/api';
 
 	let token = $state('');
 	let user = $state<any>(null);
 	let isLoading = $state(true);
 	let error = $state('');
 	let showSuccessToast = $state(false);
-
-	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 	onMount(async () => {
 		const params = new URLSearchParams(window.location.search);
@@ -27,24 +26,13 @@
 		}
 
 		try {
-			const response = await fetch(`${apiUrl}/api/users/me`, {
-				headers: {
-					'Authorization': `Bearer ${token}`
-				}
-			});
-
-			if (!response.ok) {
-				if (response.status === 401) {
-					logout('session_invalid');
-					return;
-				}
-				throw new Error('Failed to fetch user profile');
-			}
-
-			user = await response.json();
+			user = await fetchJson<any>('/api/users/me');
 		} catch (err) {
 			console.error(err);
-			error = 'Failed to load user data. Please try logging in again.';
+			// 401 is handled globally by fetchJson
+			if (!(err instanceof ApiError && err.status === 401)) {
+				error = 'Failed to load user data. Please try logging in again.';
+			}
 		} finally {
 			isLoading = false;
 		}

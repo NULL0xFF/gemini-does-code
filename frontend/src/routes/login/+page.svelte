@@ -2,10 +2,10 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import { fetchJson } from '$lib/api';
 
 	let isLoading = $state(false);
 	let errorMessage = $state('');
-	const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 	onMount(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -28,9 +28,7 @@
 	async function loginWithDiscord() {
 		try {
 			isLoading = true;
-			const response = await fetch(`${apiUrl}/api/auth/discord/url`);
-			if (!response.ok) throw new Error('Failed to get auth URL');
-			const data = await response.json();
+			const data = await fetchJson<{ url: string }>('/api/auth/discord/url');
 			window.location.href = data.url;
 		} catch (error) {
 			console.error('Login error:', error);
