@@ -22,7 +22,7 @@ public class PartyResponse {
     private String start;
     private List<String> joinedMembers;
 
-    public PartyResponse(UUID id, UUID scheduleId, String title, String raidType, Integer members, Integer max, Instant start, List<String> joinedMembers) {
+    public PartyResponse(UUID id, UUID scheduleId, String title, String raidType, Integer members, Integer max, Instant start, Boolean isCompleted, List<String> joinedMembers) {
         this.id = id;
         this.scheduleId = scheduleId;
         this.title = title;
@@ -32,12 +32,13 @@ public class PartyResponse {
         this.start = start != null ? start.toString() : null;
         this.joinedMembers = joinedMembers;
 
-        if (start != null) {
+        if (Boolean.TRUE.equals(isCompleted)) {
+            this.status = "Done";
+        } else if (start != null) {
             if (Instant.now().isAfter(start)) {
                 this.status = "On-going";
             } else {
                 this.status = "Planned";
             }
         }
-    }
-}
+    }}

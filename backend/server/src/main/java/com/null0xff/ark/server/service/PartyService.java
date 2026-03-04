@@ -59,7 +59,7 @@ public class PartyService {
 
         partyRepository.save(party);
 
-        return new PartyResponse(party.getId(), scheduleId, party.getTitle(), party.getRaidType(), 0, party.getMaxMembers(), party.getStartTime(), List.of());
+        return new PartyResponse(party.getId(), scheduleId, party.getTitle(), party.getRaidType(), 0, party.getMaxMembers(), party.getStartTime(), party.getIsCompleted(), List.of());
     }
 
     public List<PartyResponse> getScheduleParties(UUID scheduleId, UUID userId) {
@@ -77,7 +77,7 @@ public class PartyService {
                         return (nickname != null && !nickname.isEmpty()) ? nickname : pm.getUser().getUsername();
                     })
                     .collect(Collectors.toList());
-            return new PartyResponse(party.getId(), scheduleId, party.getTitle(), party.getRaidType(), members.size(), party.getMaxMembers(), party.getStartTime(), memberNames);
+            return new PartyResponse(party.getId(), scheduleId, party.getTitle(), party.getRaidType(), members.size(), party.getMaxMembers(), party.getStartTime(), party.getIsCompleted(), memberNames);
         }).collect(Collectors.toList());
     }
 
@@ -129,5 +129,21 @@ public class PartyService {
         }
 
         partyRepository.delete(party);
+    }
+
+    @Transactional
+    public void markPartyAsDone(UUID partyId, UUID managerId, boolean completed) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
+
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), managerId)
+                .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new ForbiddenException("Only managers can mark parties as done", partyId);
+        }
+
+        party.setIsCompleted(completed);
+        partyRepository.save(party);
     }
 }

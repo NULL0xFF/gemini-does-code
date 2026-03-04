@@ -44,6 +44,9 @@ public class Party {
     @Column(name = "start_time", nullable = false)
     private Instant startTime;
 
+    @Column(name = "is_completed", nullable = false)
+    private Boolean isCompleted = false;
+
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 

@@ -1,5 +1,6 @@
 package com.null0xff.ark.server.controller;
 
+import com.null0xff.ark.server.dto.PartyCompleteRequest;
 import com.null0xff.ark.server.service.PartyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -47,6 +48,15 @@ public class PartyController {
     public ResponseEntity<Void> deleteParty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID partyId) {
         UUID userId = UUID.fromString(jwt.getSubject());
         partyService.deleteParty(partyId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Update Party Completion", description = "Marks a party as done or un-done (MANAGER only).")
+    @ApiResponse(responseCode = "200", description = "Party completion status updated successfully")
+    @PatchMapping("/{partyId}/complete")
+    public ResponseEntity<Void> completeParty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID partyId, @RequestBody PartyCompleteRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        partyService.markPartyAsDone(partyId, userId, request.getCompleted());
         return ResponseEntity.ok().build();
     }
 }
