@@ -161,9 +161,8 @@
 							</div>
 						</div>
 
-						<div class="card-actions justify-end mt-8">
-                            {#if isManager}
-							    <a href="{base}/groups/{groupId}" class="btn btn-ghost">Cancel</a>
+						{#if isManager}
+                            <div class="card-actions justify-end mt-8">
                                 <button 
                                     class="btn btn-primary px-8" 
                                     disabled={isSaving || !groupName.trim()}
@@ -174,10 +173,8 @@
                                     {/if}
                                     Save Changes
                                 </button>
-                            {:else}
-                                <a href="{base}/groups/{groupId}" class="btn btn-ghost px-8">Back to Group</a>
-                            {/if}
-						</div>
+                            </div>
+                        {/if}
 					</div>
 				</div>
 
