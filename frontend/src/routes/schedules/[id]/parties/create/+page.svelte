@@ -1,12 +1,14 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { fetchApi, ApiError } from '$lib/api';
+	import { fetchApi, fetchJson, ApiError } from '$lib/api';
 
 	let scheduleId = $derived($page.params.id);
+    let schedule = $state<any>(null);
 	let title = $state('');
-	let raidType = $state('Valtan');
+	let raidType = $state('');
 	let maxMembers = $state(8);
 	
 	// Initialize with current date and time, formatted for datetime-local (YYYY-MM-DDThh:mm)
@@ -18,20 +20,6 @@
 	let startTime = $state(getInitialTime());
 	
 	let isSubmitting = $state(false);
-
-	const raidOptions = [
-		'Argos',
-		'Valtan',
-		'Biackiss',
-		'Kouku-Saton',
-		'Abrelshud',
-		'Kayangel',
-		'Iliakan',
-		'Kamen',
-		'Thaemine',
-		'Echidna',
-		'Behemoth'
-	];
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -47,7 +35,7 @@
 				method: 'POST',
 				body: JSON.stringify({
 					title,
-					raidType,
+					raidType: raidType || 'General',
 					maxMembers,
 					startTime: new Date(startTime).toISOString()
 				})
@@ -64,6 +52,17 @@
 			isSubmitting = false;
 		}
 	}
+
+    onMount(async () => {
+        try {
+            // Context might be available in parent, but for standalone deep link, fetch list
+            // Note: In a real app, you might have a dedicated GET /api/schedules/{id}
+            const schedulesList = await fetchJson<any[]>(`/api/groups/${$page.params.groupId || 'unknown'}/schedules`);
+            schedule = schedulesList.find((s: any) => s.id === scheduleId);
+        } catch (err) {
+            console.error('Failed to load schedule context:', err);
+        }
+    });
 </script>
 
 <svelte:head>
@@ -89,7 +88,11 @@
 				</button>
 				<div>
                     <h1 class="text-3xl font-bold text-ubuntu">Create Party</h1>
-                    <p class="opacity-70 font-neo text-sm">For Schedule ID: {scheduleId}</p>
+                    {#if schedule}
+                        <p class="opacity-70 font-neo text-sm italic">For: <span class="text-primary font-bold">{schedule.title}</span> ({new Date(schedule.start).toLocaleDateString()} ~ {new Date(schedule.end).toLocaleDateString()})</p>
+                    {:else}
+                        <p class="opacity-70 font-neo text-sm">Organize a specific raid group.</p>
+                    {/if}
                 </div>
 			</div>
 
@@ -123,12 +126,14 @@
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label for="raid-type" class="block text-sm font-bold text-ubuntu mb-2">Raid Content</label>
-                                    <select id="raid-type" class="select select-bordered w-full font-neo" bind:value={raidType}>
-                                        {#each raidOptions as option}
-                                            <option value={option}>{option}</option>
-                                        {/each}
-                                    </select>
+                                    <label for="raid-type" class="block text-sm font-bold text-ubuntu mb-2">Content / Raid Type (Optional)</label>
+                                    <input 
+                                        id="raid-type"
+                                        type="text" 
+                                        placeholder="e.g., Valtan, Vykas, Argos" 
+                                        class="input input-bordered w-full font-neo focus:ring-primary" 
+                                        bind:value={raidType}
+                                    />
                                 </div>
 
                                 <div>
@@ -149,13 +154,14 @@
                             </div>
 
                             <div>
-                                <label for="start-time" class="block text-sm font-bold text-ubuntu mb-2">Exact Start Time</label>
+                                <label for="start-time" class="block text-sm font-bold text-ubuntu mb-2">Exact Start Time (Local Time)</label>
                                 <input 
                                     id="start-time"
                                     type="datetime-local" 
                                     class="input input-bordered w-full font-mono focus:ring-primary" 
                                     bind:value={startTime}
                                 />
+                                <span class="text-xs opacity-60 mt-1 block">Pick a time when most people are available based on the heatmap.</span>
                             </div>
                         </div>
 

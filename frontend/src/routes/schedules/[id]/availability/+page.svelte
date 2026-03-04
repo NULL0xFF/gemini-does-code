@@ -87,18 +87,14 @@
             // Convert boolean grid to list of time blocks for backend
             const timeBlocks = [];
             const startDate = new Date(schedule.start);
+            startDate.setHours(0, 0, 0, 0); // Start from beginning of base date
             
             for (let d = 0; d < schedule.days; d++) {
                 for (let t = 0; t < 24; t++) {
                     if (selectedCells[d][t]) {
-                        // Start of the hour
-                        const start = new Date(startDate);
-                        start.setDate(start.getDate() + d);
-                        start.setHours(t, 0, 0, 0);
-                        
-                        // End of the hour
-                        const end = new Date(start);
-                        end.setHours(t + 1, 0, 0, 0);
+                        // Use exact timestamp offsets to avoid timezone drift
+                        const start = new Date(startDate.getTime() + (d * 24 + t) * 60 * 60 * 1000);
+                        const end = new Date(start.getTime() + 60 * 60 * 1000);
                         
                         timeBlocks.push({
                             start: start.toISOString(),
@@ -124,6 +120,43 @@
 			isSubmitting = false;
 		}
 	}
+
+    onMount(async () => {
+        try {
+            // Fetch schedule details first
+            const scheduleData = await fetchJson<any>(`/api/groups/${$page.params.groupId || 'unknown'}/schedules`).then(list => list.find((s: any) => s.id === scheduleId));
+            if (scheduleData) {
+                schedule = {
+                    ...schedule,
+                    title: scheduleData.title,
+                    start: scheduleData.start
+                };
+            }
+
+            // Fetch existing availability
+            const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
+            if (myAvail && myAvail.blocks) {
+                const baseDate = new Date(schedule.start);
+                baseDate.setHours(0, 0, 0, 0);
+
+                myAvail.blocks.forEach((block: any) => {
+                    const blockDate = new Date(block.start);
+                    const diffMs = blockDate.getTime() - baseDate.getTime();
+                    const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+                    
+                    const d = Math.floor(diffHoursTotal / 24);
+                    const t = diffHoursTotal % 24;
+
+                    if (d >= 0 && d < 8 && t >= 0 && t < 24) {
+                        selectedCells[d][t] = true;
+                    }
+                });
+                selectedCells = [...selectedCells];
+            }
+        } catch (err) {
+            console.error('Failed to load existing availability:', err);
+        }
+    });
 </script>
 
 <svelte:head>

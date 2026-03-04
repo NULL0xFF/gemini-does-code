@@ -7,16 +7,23 @@
 	let groupId = $derived($page.params.id);
 	let title = $state('');
 	
-	// Initialize with today's date
-	let startDate = $state(new Date().toISOString().split('T')[0]);
-	
-	// Initialize with tomorrow's date
-	const getTomorrow = () => {
-		const tomorrow = new Date();
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		return tomorrow.toISOString().split('T')[0];
+	// Initialize with today's date at top of hour
+	const getNowISO = () => {
+		const d = new Date();
+		d.setMinutes(0, 0, 0);
+		return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
 	};
-	let endDate = $state(getTomorrow());
+	
+	// Initialize with one week from now
+	const getNextWeekISO = () => {
+		const d = new Date();
+		d.setDate(d.getDate() + 7);
+		d.setMinutes(0, 0, 0);
+		return new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+	};
+
+	let startDate = $state(getNowISO());
+	let endDate = $state(getNextWeekISO());
 	
 	let isSubmitting = $state(false);
 
@@ -31,7 +38,7 @@
 			// Auto-correct end date to be at least 1 day after start date if invalid
 			const d = new Date(startDate);
 			d.setDate(d.getDate() + 1);
-			endDate = d.toISOString().split('T')[0];
+			endDate = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
 		}
 	});
 
@@ -44,18 +51,15 @@
 				method: 'POST',
 				body: JSON.stringify({
 					title: title,
-					// Append time to create a full ISO string (assuming start of day for now)
-					startTime: `${startDate}T00:00:00Z`,
-					endTime: `${endDate}T23:59:59Z`
+					startTime: new Date(startDate).toISOString(),
+					endTime: new Date(endDate).toISOString()
 				})
 			});
 
 			window.location.href = `${base}/groups/${groupId}?schedule_created=success`;
 		} catch (err) {
 			console.error(err);
-			if (err instanceof ApiError && err.status === 404) {
-				alert('Schedule creation endpoint not yet implemented.');
-			} else if (!(err instanceof ApiError && err.status === 401)) {
+			if (!(err instanceof ApiError && err.status === 401)) {
 				alert('An error occurred while creating the schedule.');
 			}
 		} finally {
@@ -104,21 +108,21 @@
 
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div>
-								<label for="start-date" class="block text-sm font-bold text-ubuntu mb-2">Start Date</label>
+								<label for="start-date" class="block text-sm font-bold text-ubuntu mb-2">Start Time</label>
 								<input 
 									id="start-date"
-									type="date" 
-									class="input input-bordered w-full font-neo focus:ring-primary" 
+									type="datetime-local" 
+									class="input input-bordered w-full font-mono" 
 									bind:value={startDate}
 								/>
 							</div>
 
 							<div>
-								<label for="end-date" class="block text-sm font-bold text-ubuntu mb-2">End Date</label>
+								<label for="end-date" class="block text-sm font-bold text-ubuntu mb-2">End Time</label>
 								<input 
 									id="end-date"
-									type="date" 
-									class="input input-bordered w-full font-neo focus:ring-primary" 
+									type="datetime-local" 
+									class="input input-bordered w-full font-mono" 
 									bind:value={endDate}
 								/>
 							</div>

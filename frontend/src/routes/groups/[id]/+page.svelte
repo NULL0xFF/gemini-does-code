@@ -3,7 +3,7 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { fetchJson, ApiError } from '$lib/api';
+	import { fetchApi, fetchJson, ApiError } from '$lib/api';
 
 	let groupId = $derived($page.params.id);
 	let group = $state<any>(null);
@@ -67,8 +67,13 @@
             data.forEach(userAvail => {
                 userAvail.blocks.forEach((block: any) => {
                     const blockDate = new Date(block.start);
-                    const dayDiff = Math.floor((blockDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
-                    const hour = blockDate.getHours();
+                    // Compare timestamps directly to handle timezone issues correctly
+                    // Calculate hours from start of schedule base date (midnight)
+                    const diffMs = blockDate.getTime() - baseDate.getTime();
+                    const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+                    
+                    const dayDiff = Math.floor(diffHoursTotal / 24);
+                    const hour = diffHoursTotal % 24;
 
                     if (dayDiff >= 0 && dayDiff < 8 && hour >= 0 && hour < 24) {
                         grid[dayDiff][hour]++;
@@ -88,6 +93,54 @@
         }
         openHeatmapId = openHeatmapId === id ? null : id;
 	}
+
+    async function renameSchedule(scheduleId: string, oldTitle: string) {
+        const schedule = schedules.find(s => s.id === scheduleId);
+        const newTitle = prompt(`Enter new title for "${oldTitle}":`, oldTitle);
+        if (newTitle && newTitle !== oldTitle) {
+            try {
+                await fetchApi(`/api/groups/schedules/${scheduleId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        title: newTitle,
+                        startTime: schedule.start,
+                        endTime: schedule.end
+                    })
+                });
+                await fetchData();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to rename schedule.');
+            }
+        }
+    }
+
+    async function deleteSchedule(scheduleId: string) {
+        if (confirm('Are you sure you want to delete this schedule and all its availability data?')) {
+            try {
+                await fetchApi(`/api/groups/schedules/${scheduleId}`, { method: 'DELETE' });
+                await fetchData();
+            } catch (err) {
+                console.error(err);
+                alert('Failed to delete schedule.');
+            }
+        }
+    }
+
+    function formatDateOffset(dateString: string, offsetDays: number) {
+		const d = new Date(dateString);
+		d.setDate(d.getDate() + offsetDays);
+		const day = String(d.getDate()).padStart(2, '0');
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        const weekday = weekdays[d.getDay()];
+		return `${day} (${weekday})`;
+	}
+
+    function getFullDate(dateString: string, offsetDays: number) {
+        const d = new Date(dateString);
+		d.setDate(d.getDate() + offsetDays);
+        return d.toLocaleDateString();
+    }
 
     function getHeatmapClass(count: number) {
         if (!count) return 'bg-base-100';
@@ -124,14 +177,6 @@
 			console.error(err);
 			alert('Failed to leave party.');
 		}
-	}
-
-	function formatDateOffset(dateString: string, offsetDays: number) {
-		const d = new Date(dateString);
-		d.setDate(d.getDate() + offsetDays);
-		const month = String(d.getMonth() + 1).padStart(2, '0');
-		const day = String(d.getDate()).padStart(2, '0');
-		return `${month}-${day}`;
 	}
 
 	function logout() {
@@ -227,8 +272,22 @@
 													<div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
 														{schedule.status}
 													</div>
+                                                    {#if isManager}
+                                                        <div class="dropdown dropdown-end dropdown-bottom">
+                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                            <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                            <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                                            </label>
+                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                            <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                                <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
+                                                                <li><button class="text-sm text-error" onclick={() => deleteSchedule(schedule.id)}>Delete</button></li>
+                                                            </ul>
+                                                        </div>
+                                                    {/if}
 												</div>
-												<p class="text-sm opacity-70 mt-1 font-mono">{schedule.start} ~ {schedule.end}</p>
+												<p class="text-xs opacity-70 mt-1 font-mono">{new Date(schedule.start).toLocaleString()} ~ {new Date(schedule.end).toLocaleString()}</p>
 											</div>
 											<div class="flex gap-2">
 												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</a>
@@ -254,9 +313,9 @@
 														<tbody>
 															{#each Array(8) as _, d}
 																<tr>
-																	<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{formatDateOffset(schedule.start, d)}</th>
+																	<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10" title={getFullDate(schedule.start, d)}>{formatDateOffset(schedule.start, d)}</th>
 																	{#each Array(24) as _, t}
-																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{getFullDate(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
 																			<div class="w-full h-4 text-[8px] flex items-center justify-center font-bold">
                                                                                 {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
                                                                             </div>
@@ -274,7 +333,7 @@
 															<tr>
 																<th class="border border-base-300 sticky left-0 bg-base-200 w-8 z-10"></th>
 																{#each Array(8) as _, d}
-																	<th class="font-mono px-1 py-1 border border-base-300 text-[10px] whitespace-nowrap">{formatDateOffset(schedule.start, d)}</th>
+																	<th class="font-mono px-1 py-1 border border-base-300 text-[10px] whitespace-nowrap" title={getFullDate(schedule.start, d)}>{formatDateOffset(schedule.start, d)}</th>
 																{/each}
 															</tr>
 														</thead>
@@ -283,7 +342,7 @@
 																<tr>
 																	<th class="font-mono px-0 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{t}</th>
 																	{#each Array(8) as _, d}
-																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{getFullDate(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
 																			<div class="w-full h-4 min-w-[2rem] flex items-center justify-center text-[8px] font-bold">
                                                                                 {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
                                                                             </div>
@@ -311,7 +370,7 @@
 													<div class="bg-base-200 rounded-md overflow-hidden transition-all duration-200 border {expandedPartyId === party.id ? 'border-primary shadow-sm' : 'border-transparent'}">
 														<div 
 															class="flex justify-between items-center p-3 hover:bg-base-300 cursor-pointer"
-															onclick={() => toggleParty(party.id)}
+															onclick={() => toggleParty(party.id, schedule.id)}
 														>
 															<div class="flex items-center gap-3">
 																<span class="font-bold text-sm text-neo">{party.title}</span>
@@ -328,9 +387,9 @@
 																<div class="flex justify-between items-start mb-4">
 																	<div>
 																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
-																		<p class="font-mono text-base">{party.start}</p>
+																		<p class="font-mono text-base">{new Date(party.start).toLocaleString()}</p>
 																	</div>
-																	{#if party.joinedMembers.includes(user.nickname || user.username)}
+																	{#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
 																		<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
 																	{:else}
 																		<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
@@ -353,7 +412,7 @@
 													</div>
 												{/each}
 												{#if parties.filter(p => p.scheduleId === schedule.id).length === 0}
-													<p class="text-sm opacity-50 italic">No parties created yet for this schedule.</p>
+													<p class="text-xs opacity-50 italic text-center py-2">No parties organized yet.</p>
 												{/if}
 											</div>
 										</div>
@@ -363,23 +422,32 @@
 						{/if}
 					</div>
 
-					<!-- Sidebar: Members -->
+					<!-- Sidebar Section: Roster -->
 					<div class="space-y-6">
-						<h3 class="text-2xl font-bold text-ubuntu">Members ({members.length})</h3>
-						<div class="card bg-base-100 shadow-md">
-							<div class="card-body p-0">
-								<ul class="menu bg-base-100 w-full rounded-box">
+						<div class="card bg-base-100 shadow-xl">
+							<div class="card-body p-6">
+								<h3 class="text-xl font-bold text-ubuntu mb-4">Group Roster</h3>
+								<div class="space-y-4">
 									{#each members as member}
-										<li>
-											<div class="flex justify-between hover:bg-base-200">
-												<span class="font-neo font-bold">{member.username}</span>
-												{#if member.role === 'MANAGER'}
-													<span class="badge badge-primary badge-sm text-xs">Manager</span>
-												{/if}
+										<div class="flex items-center justify-between">
+											<div class="flex items-center gap-3">
+												<div class="avatar placeholder">
+													<div class="bg-neutral text-neutral-content rounded-full w-8">
+														{#if member.avatar}
+															<img src="https://cdn.discordapp.com/avatars/{member.discordId}/{member.avatar}.png" alt={member.username} />
+														{:else}
+															<span>{member.username.substring(0, 2).toUpperCase()}</span>
+														{/if}
+													</div>
+												</div>
+												<div>
+													<p class="font-bold text-sm">{member.username}</p>
+													<p class="text-[10px] opacity-50 uppercase tracking-wider">{member.role}</p>
+												</div>
 											</div>
-										</li>
+										</div>
 									{/each}
-								</ul>
+								</div>
 							</div>
 						</div>
 					</div>
