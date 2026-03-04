@@ -60,7 +60,7 @@ public class GroupService {
             throw new RuntimeException("Only managers can delete the group");
         }
 
-        groupRepository.delete(manager.getGroup());
+        groupRepository.deleteById(groupId);
     }
 
     public List<GroupMemberResponse> getGroupMembers(UUID groupId, UUID userId) {
