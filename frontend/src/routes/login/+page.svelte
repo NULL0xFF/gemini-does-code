@@ -3,21 +3,18 @@
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchJson } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let isLoading = $state(false);
-	let errorMessage = $state('');
 
 	onMount(() => {
 		const params = new URLSearchParams(window.location.search);
 		const error = params.get('error');
 		
 		if (error === 'session_invalid') {
-			errorMessage = 'Your session has been invalidated (possibly logged in elsewhere). Please login again.';
+			toast.warning('Your session has been invalidated. Please login again.');
 			// Clean up URL
 			window.history.replaceState({}, '', window.location.pathname);
-			
-			// Auto-hide toast after 5 seconds
-			setTimeout(() => { errorMessage = ''; }, 5000);
 		}
 
 		if (localStorage.getItem('ark_token')) {
@@ -33,7 +30,7 @@
 		} catch (error) {
 			console.error('Login error:', error);
 			isLoading = false;
-			alert('Failed to connect to the authentication server.');
+			toast.error('Failed to connect to the authentication server.');
 		}
 	}
 </script>
@@ -48,20 +45,10 @@
 		<ThemeToggle />
 	</div>
 
-	{#if errorMessage}
-		<div class="toast toast-top toast-center z-[100]">
-			<div class="alert alert-warning shadow-lg">
-				<svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-				<span>{errorMessage}</span>
-				<button class="btn btn-sm btn-ghost" onclick={() => errorMessage = ''}>✕</button>
-			</div>
-		</div>
-	{/if}
-
 	<div class="card w-full max-w-md bg-base-100 shadow-xl border-t-4 border-primary">
 		<div class="card-body items-center text-center">
-			<h2 class="card-title text-3xl font-bold mb-2">Welcome Back</h2>
-			<p class="text-base-content/70 mb-8">Login or register to access your groups.</p>
+			<h2 class="card-title text-3xl font-bold mb-2 font-ubuntu">Welcome Back</h2>
+			<p class="text-base-content/70 mb-8 font-neo">Login or register to access your groups.</p>
 			
 			<button class="btn btn-primary btn-lg w-full gap-3 text-lg" disabled={isLoading} onclick={loginWithDiscord} aria-label="Login with Discord">
 				{#if isLoading}
