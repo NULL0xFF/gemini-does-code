@@ -135,24 +135,30 @@
 						<div class="space-y-6">
 							<div>
 								<label for="group-name" class="block text-sm font-bold text-ubuntu mb-2">Group Name</label>
-								<input 
-									id="group-name"
-									type="text" 
-									class="input input-bordered w-full font-neo focus:ring-primary" 
-                                    disabled={!isManager}
-									bind:value={groupName}
-									onkeydown={(e) => e.key === 'Enter' && isManager && handleSubmit()}
-								/>
+                                {#if isManager}
+								    <input 
+									    id="group-name"
+									    type="text" 
+									    class="input input-bordered w-full font-neo focus:ring-primary" 
+									    bind:value={groupName}
+									    onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
+								    />
+                                {:else}
+                                    <p class="text-xl font-bold font-ubuntu px-1">{groupName}</p>
+                                {/if}
 							</div>
 
 							<div>
 								<label for="description" class="block text-sm font-bold text-ubuntu mb-2">Description</label>
-								<textarea 
-									id="description"
-									class="textarea textarea-bordered h-32 w-full font-neo focus:ring-primary" 
-                                    disabled={!isManager}
-									bind:value={description}
-								></textarea>
+                                {#if isManager}
+								    <textarea 
+									    id="description"
+									    class="textarea textarea-bordered h-32 w-full font-neo focus:ring-primary" 
+									    bind:value={description}
+								    ></textarea>
+                                {:else}
+                                    <p class="text-base font-neo opacity-80 px-1 whitespace-pre-wrap">{description || 'No description provided.'}</p>
+                                {/if}
 							</div>
 						</div>
 
