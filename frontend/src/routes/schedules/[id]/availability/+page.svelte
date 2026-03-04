@@ -142,14 +142,6 @@
 				<div class="card-body">
                     <p class="text-sm opacity-80 mb-4 font-neo text-center">Click and drag to select or deselect the times you are available to raid.</p>
 					
-                    <div class="flex justify-end mb-4">
-                        <button class="btn btn-sm btn-outline btn-error" onclick={() => {
-                            selectedCells = Array(schedule.days).fill(null).map(() => Array(24).fill(false));
-                        }}>
-                            Clear All
-                        </button>
-                    </div>
-
                     <!-- Desktop Heatmap (Dates = Rows) -->
                     <div class="hidden md:block overflow-x-auto bg-base-200 p-4 rounded-lg">
                         <table class="table table-xs w-full text-center border-collapse">
@@ -216,13 +208,19 @@
                         </table>
                     </div>
 
-					<div class="card-actions justify-end mt-8">
-						<button class="btn btn-ghost" onclick={() => window.history.back()}>Cancel</button>
-						<button 
-							class="btn btn-primary px-8" 
-							disabled={isSubmitting}
-							onclick={handleSubmit}
-						>
+					<div class="flex justify-between items-center mt-8">
+                        <button class="btn btn-outline btn-error" onclick={() => {
+                            selectedCells = Array(schedule.days).fill(null).map(() => Array(24).fill(false));
+                        }}>
+                            Clear All
+                        </button>
+                        <div class="space-x-2">
+						    <button class="btn btn-ghost" onclick={() => window.history.back()}>Cancel</button>
+						    <button 
+							    class="btn btn-primary px-8" 
+							    disabled={isSubmitting}
+							    onclick={handleSubmit}
+						    >
 							{#if isSubmitting}
 								<span class="loading loading-spinner"></span>
 							{/if}
