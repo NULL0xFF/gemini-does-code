@@ -55,10 +55,8 @@
 
     onMount(async () => {
         try {
-            // Context might be available in parent, but for standalone deep link, fetch list
-            // Note: In a real app, you might have a dedicated GET /api/schedules/{id}
-            const schedulesList = await fetchJson<any[]>(`/api/groups/${$page.params.groupId || 'unknown'}/schedules`);
-            schedule = schedulesList.find((s: any) => s.id === scheduleId);
+            // Fetch schedule details directly
+            schedule = await fetchJson<any>(`/api/schedules/${scheduleId}`);
         } catch (err) {
             console.error('Failed to load schedule context:', err);
         }

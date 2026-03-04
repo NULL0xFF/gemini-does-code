@@ -133,24 +133,19 @@
 
     onMount(async () => {
         try {
+            // Fetch schedule details directly using the new endpoint
+            const s = await fetchJson<any>(`/api/schedules/${scheduleId}`);
+            if (s) {
+                schedule = {
+                    ...schedule,
+                    title: s.title,
+                    start: s.start
+                };
+            }
+
             // Fetch existing availability
             const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
             
-            // We need the schedule start date to render the grid correctly
-            const userGroups = await fetchJson<any[]>('/api/groups');
-            for (const g of userGroups) {
-                const groupSchedules = await fetchJson<any[]>(`/api/groups/${g.id}/schedules`);
-                const s = groupSchedules.find((s: any) => s.id === scheduleId);
-                if (s) {
-                    schedule = {
-                        ...schedule,
-                        title: s.title,
-                        start: s.start
-                    };
-                    break;
-                }
-            }
-
             if (myAvail && myAvail.blocks && schedule.start) {
                 const baseDate = new Date(schedule.start);
                 baseDate.setHours(0, 0, 0, 0);
