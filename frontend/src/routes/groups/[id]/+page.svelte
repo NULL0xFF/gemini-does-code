@@ -131,7 +131,7 @@
 						{#if isManager}
 							<div class="flex gap-2">
 								<a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
-								<a href="{base}/groups/{groupId}/invites" class="btn btn-outline">Settings</a>
+								<a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold">Settings</a>
 							</div>
 						{/if}
 					</div>
