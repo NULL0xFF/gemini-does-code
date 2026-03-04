@@ -3,6 +3,9 @@ package com.null0xff.ark.server.service;
 import com.null0xff.ark.server.dto.*;
 import com.null0xff.ark.server.entity.*;
 import com.null0xff.ark.server.enums.GroupRole;
+import com.null0xff.ark.server.exception.ForbiddenException;
+import com.null0xff.ark.server.exception.ResourceNotFoundException;
+import com.null0xff.ark.server.exception.ValidationException;
 import com.null0xff.ark.server.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,20 +33,20 @@ public class GroupService {
 
     public GroupResponse getGroupDetails(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         Group group = groupRepository.findById(groupId)
-                .orElseThrow(() -> new RuntimeException("Group not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Group not found"));
         return new GroupResponse(group.getId(), group.getName(), group.getDescription());
     }
 
     @Transactional
     public void updateGroup(UUID groupId, UUID managerId, String name, String description) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can update group settings");
+            throw new ForbiddenException("Only managers can update group settings");
         }
 
         Group group = manager.getGroup();
@@ -55,10 +58,10 @@ public class GroupService {
     @Transactional
     public void deleteGroup(UUID groupId, UUID managerId) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can delete the group");
+            throw new ForbiddenException("Only managers can delete the group");
         }
 
         groupRepository.deleteById(groupId);
@@ -66,7 +69,7 @@ public class GroupService {
 
     public List<GroupMemberResponse> getGroupMembers(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         return groupMemberRepository.findByGroupId(groupId).stream()
                 .map(member -> new GroupMemberResponse(
@@ -82,10 +85,10 @@ public class GroupService {
     @Transactional
     public InviteCodeResponse generateInviteCode(UUID groupId, UUID managerId, Integer maxUsage, Integer expirationDays) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can generate invite codes");
+            throw new ForbiddenException("Only managers can generate invite codes");
         }
 
         String codeStr = "ARK-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase() + "-" + UUID.randomUUID().toString().substring(4, 8).toUpperCase();
@@ -104,10 +107,10 @@ public class GroupService {
 
     public List<InviteCodeResponse> getActiveInviteCodes(UUID groupId, UUID managerId) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can view invite codes");
+            throw new ForbiddenException("Only managers can view invite codes");
         }
 
         return inviteCodeRepository.findByGroupId(groupId).stream()
@@ -119,17 +122,17 @@ public class GroupService {
     @Transactional
     public void revokeInviteCode(UUID groupId, UUID managerId, String codeStr) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can revoke invite codes");
+            throw new ForbiddenException("Only managers can revoke invite codes");
         }
 
         InviteCode code = inviteCodeRepository.findByCode(codeStr)
-                .orElseThrow(() -> new RuntimeException("Code not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Code not found"));
 
         if (!code.getGroup().getId().equals(groupId)) {
-            throw new RuntimeException("Code does not belong to this group");
+            throw new ValidationException("Code does not belong to this group");
         }
 
         inviteCodeRepository.delete(code);
@@ -138,22 +141,22 @@ public class GroupService {
     @Transactional
     public void joinGroup(UUID userId, String codeStr) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         InviteCode code = inviteCodeRepository.findByCode(codeStr)
-                .orElseThrow(() -> new RuntimeException("Invalid or expired invite code"));
+                .orElseThrow(() -> new ValidationException("Invalid or expired invite code"));
 
         if (code.getExpiresAt().isBefore(Instant.now())) {
-            throw new RuntimeException("Invite code has expired");
+            throw new ValidationException("Invite code has expired");
         }
 
         if (code.getMaxUsage() != null && code.getCurrentUsage() >= code.getMaxUsage()) {
-            throw new RuntimeException("Invite code usage limit reached");
+            throw new ValidationException("Invite code usage limit reached");
         }
 
         Optional<GroupMember> existingMember = groupMemberRepository.findByGroupIdAndUserId(code.getGroup().getId(), userId);
         if (existingMember.isPresent()) {
-            throw new RuntimeException("You are already a member of this group");
+            throw new ValidationException("You are already a member of this group");
         }
 
         GroupMember newMember = new GroupMember();
@@ -169,14 +172,14 @@ public class GroupService {
     @Transactional
     public ScheduleResponse createSchedule(UUID groupId, UUID managerId, String title, Instant start, Instant end) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can create schedules");
+            throw new ForbiddenException("Only managers can create schedules");
         }
 
         if (start == null || end == null || !end.isAfter(start)) {
-            throw new IllegalArgumentException("Invalid schedule time range");
+            throw new ValidationException("Invalid schedule time range");
         }
 
         ScheduleInstance schedule = new ScheduleInstance();
@@ -193,17 +196,17 @@ public class GroupService {
     @Transactional
     public void updateSchedule(UUID scheduleId, UUID managerId, String title, Instant start, Instant end) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can update schedules");
+            throw new ForbiddenException("Only managers can update schedules");
         }
 
         if (start == null || end == null || !end.isAfter(start)) {
-            throw new IllegalArgumentException("Invalid schedule time range");
+            throw new ValidationException("Invalid schedule time range");
         }
 
         schedule.setTitle(title);
@@ -215,13 +218,13 @@ public class GroupService {
     @Transactional
     public void deleteSchedule(UUID scheduleId, UUID managerId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can delete schedules");
+            throw new ForbiddenException("Only managers can delete schedules");
         }
 
         scheduleRepository.delete(schedule);
@@ -229,7 +232,7 @@ public class GroupService {
 
     public List<ScheduleResponse> getGroupSchedules(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         return scheduleRepository.findByGroupIdOrderByStartTimeAsc(groupId).stream()
                 .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime()))
@@ -238,10 +241,10 @@ public class GroupService {
 
     public ScheduleResponse getSchedule(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
     }

@@ -8,6 +8,9 @@ import com.null0xff.ark.server.entity.PartyMember;
 import com.null0xff.ark.server.entity.ScheduleInstance;
 import com.null0xff.ark.server.entity.User;
 import com.null0xff.ark.server.enums.GroupRole;
+import com.null0xff.ark.server.exception.ForbiddenException;
+import com.null0xff.ark.server.exception.ResourceNotFoundException;
+import com.null0xff.ark.server.exception.ValidationException;
 import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.PartyMemberRepository;
 import com.null0xff.ark.server.repository.PartyRepository;
@@ -38,13 +41,13 @@ public class PartyService {
     @Transactional
     public PartyResponse createParty(UUID scheduleId, UUID managerId, PartyRequest request) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new RuntimeException("Only managers can create parties");
+            throw new ForbiddenException("Only managers can create parties");
         }
 
         Party party = new Party();
@@ -61,10 +64,10 @@ public class PartyService {
 
     public List<PartyResponse> getScheduleParties(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         return partyRepository.findByScheduleIdOrderByStartTimeAsc(scheduleId).stream().map(party -> {
             List<PartyMember> members = partyMemberRepository.findByPartyId(party.getId());
@@ -81,23 +84,23 @@ public class PartyService {
     @Transactional
     public void joinParty(UUID partyId, UUID userId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new RuntimeException("Party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Party not found"));
 
         groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), userId)
-                .orElseThrow(() -> new RuntimeException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied"));
 
         int currentMembers = partyMemberRepository.countByPartyId(partyId);
         if (currentMembers >= party.getMaxMembers()) {
-            throw new RuntimeException("Party is full");
+            throw new ValidationException("Party is full");
         }
 
         Optional<PartyMember> existing = partyMemberRepository.findByPartyIdAndUserId(partyId, userId);
         if (existing.isPresent()) {
-            throw new RuntimeException("You are already in this party");
+            throw new ValidationException("You are already in this party");
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         PartyMember member = new PartyMember();
         member.setParty(party);
@@ -108,7 +111,7 @@ public class PartyService {
     @Transactional
     public void leaveParty(UUID partyId, UUID userId) {
         PartyMember member = partyMemberRepository.findByPartyIdAndUserId(partyId, userId)
-                .orElseThrow(() -> new RuntimeException("You are not in this party"));
+                .orElseThrow(() -> new ValidationException("You are not in this party"));
         
         partyMemberRepository.delete(member);
     }

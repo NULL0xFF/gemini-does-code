@@ -1,6 +1,7 @@
 package com.null0xff.ark.server.service;
 
 import com.null0xff.ark.server.entity.User;
+import com.null0xff.ark.server.exception.ResourceNotFoundException;
 import com.null0xff.ark.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -69,7 +70,7 @@ public class AuthService {
      */
     public String refreshToken(UUID userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found during token refresh"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found during token refresh"));
         user.setLastLogin(Instant.now());
         String newToken = jwtTokenService.generateToken(user);
         user.setLastIssuedAt(jwtTokenService.extractIat(newToken));

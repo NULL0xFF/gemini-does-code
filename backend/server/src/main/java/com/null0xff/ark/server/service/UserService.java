@@ -5,6 +5,7 @@ import com.null0xff.ark.server.entity.Group;
 import com.null0xff.ark.server.entity.GroupMember;
 import com.null0xff.ark.server.entity.User;
 import com.null0xff.ark.server.enums.GroupRole;
+import com.null0xff.ark.server.exception.ResourceNotFoundException;
 import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.GroupRepository;
 import com.null0xff.ark.server.repository.UserRepository;
@@ -53,7 +54,7 @@ public class UserService {
     @Transactional
     public Group createGroup(UUID userId, String name, String description) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Group group = new Group();
         group.setName(name);
@@ -78,7 +79,7 @@ public class UserService {
     @Transactional
     public void updateNickname(UUID userId, String nickname) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setNickname(nickname);
         userRepository.save(user);
     }
@@ -91,7 +92,7 @@ public class UserService {
     @Transactional
     public void deleteAccount(UUID userId) {
         if (!userRepository.existsById(userId)) {
-            throw new RuntimeException("User not found");
+            throw new ResourceNotFoundException("User not found");
         }
         userRepository.deleteById(userId);
     }

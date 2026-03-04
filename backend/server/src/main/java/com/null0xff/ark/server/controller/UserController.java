@@ -2,6 +2,7 @@ package com.null0xff.ark.server.controller;
 
 import com.null0xff.ark.server.dto.NicknameRequest;
 import com.null0xff.ark.server.entity.User;
+import com.null0xff.ark.server.exception.ResourceNotFoundException;
 import com.null0xff.ark.server.repository.UserRepository;
 import com.null0xff.ark.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,7 +43,7 @@ public class UserController {
     public ResponseEntity<Map<String, Object>> getCurrentUser(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return ResponseEntity.ok(Map.of(
                 "id", user.getId(),
