@@ -72,6 +72,14 @@ public class GroupController {
         return ResponseEntity.ok(groupService.getGroupDetails(groupId, userId));
     }
 
+    @Operation(summary = "Update Group Settings", description = "Updates group name and description (MANAGER only).")
+    @PutMapping("/{groupId}")
+    public ResponseEntity<Void> updateGroup(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @RequestBody GroupRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.updateGroup(groupId, userId, request.getName(), request.getDescription());
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Get Group Members", description = "Retrieves the roster for a specific group.")
     @GetMapping("/{groupId}/members")
     public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {

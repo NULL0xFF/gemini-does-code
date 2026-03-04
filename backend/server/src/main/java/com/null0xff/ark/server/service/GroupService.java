@@ -36,6 +36,21 @@ public class GroupService {
         return new GroupResponse(group.getId(), group.getName(), group.getDescription());
     }
 
+    @Transactional
+    public void updateGroup(UUID groupId, UUID managerId, String name, String description) {
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new RuntimeException("Only managers can update group settings");
+        }
+
+        Group group = manager.getGroup();
+        group.setName(name);
+        group.setDescription(description);
+        groupRepository.save(group);
+    }
+
     public List<GroupMemberResponse> getGroupMembers(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
