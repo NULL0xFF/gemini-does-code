@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
     import { toast } from '$lib/stores/toast.svelte';
 
@@ -15,6 +16,9 @@
 
 	// List state
 	let activeCodes = $state<any[]>([]);
+
+    let revokeModal: ReturnType<typeof ConfirmationModal>;
+    let codeToRevoke = $state<string | null>(null);
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -57,20 +61,26 @@
 		}
 	}
 
-	async function revokeCode(codeToRevoke: string) {
-		if (confirm(`Are you sure you want to revoke code ${codeToRevoke}?`)) {
-			try {
-				await fetchApi(`/api/groups/${groupId}/invites/${codeToRevoke}`, {
-					method: 'DELETE'
-				});
-				await fetchInvites();
-                toast.success('Code revoked.');
-			} catch (err) {
-				console.error(err);
-				toast.error('Failed to revoke code.');
-			}
-		}
+	async function requestRevoke(code: string) {
+        codeToRevoke = code;
+        revokeModal.show();
 	}
+
+    async function confirmRevoke() {
+        if (!codeToRevoke) return;
+        try {
+            await fetchApi(`/api/groups/${groupId}/invites/${codeToRevoke}`, {
+                method: 'DELETE'
+            });
+            await fetchInvites();
+            toast.success('Code revoked.');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to revoke code.');
+        } finally {
+            codeToRevoke = null;
+        }
+    }
 
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text).then(() => {
@@ -190,7 +200,7 @@
 												<td class="text-right">
 													<button 
 														class="btn btn-ghost btn-xs text-error hover:bg-error/20"
-														onclick={() => revokeCode(invite.code)}
+														onclick={() => requestRevoke(invite.code)}
 													>
 														Revoke
 													</button>
@@ -212,3 +222,13 @@
 		</div>
 	</main>
 </div>
+
+<ConfirmationModal
+    bind:this={revokeModal}
+    id="revoke-invite-modal"
+    title="Revoke Invite Code"
+    message="Are you sure you want to revoke this invite code? Any new users attempting to use it will no longer be able to join."
+    confirmText="Revoke Code"
+    type="warning"
+    onConfirm={confirmRevoke}
+/>

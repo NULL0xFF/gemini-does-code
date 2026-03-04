@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
     import { toast } from '$lib/stores/toast.svelte';
 
@@ -25,6 +26,9 @@
 	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
     let rawAvailability = $state<any[]>([]);
     let selectedCell = $state<{d: number, t: number, members: string[]} | null>(null);
+
+    let deleteScheduleModal: ReturnType<typeof ConfirmationModal>;
+    let scheduleToDelete = $state<string | null>(null);
 
 	async function fetchData() {
 	        try {
@@ -124,16 +128,22 @@
         }
     }
 
-    async function deleteSchedule(scheduleId: string) {
-        if (confirm('Are you sure you want to delete this schedule and all its availability data?')) {
-            try {
-                await fetchApi(`/api/groups/schedules/${scheduleId}`, { method: 'DELETE' });
-                await fetchData();
-                toast.success('Schedule deleted.');
-            } catch (err) {
-                console.error(err);
-                toast.error('Failed to delete schedule.');
-            }
+    async function requestDeleteSchedule(scheduleId: string) {
+        scheduleToDelete = scheduleId;
+        deleteScheduleModal.show();
+    }
+
+    async function confirmDeleteSchedule() {
+        if (!scheduleToDelete) return;
+        try {
+            await fetchApi(`/api/groups/schedules/${scheduleToDelete}`, { method: 'DELETE' });
+            await fetchData();
+            toast.success('Schedule deleted.');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete schedule.');
+        } finally {
+            scheduleToDelete = null;
         }
     }
 
@@ -314,7 +324,7 @@
                                                             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                             <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
                                                                 <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
-                                                                <li><button class="text-sm text-error" onclick={() => deleteSchedule(schedule.id)}>Delete</button></li>
+                                                                <li><button class="text-sm text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
                                                             </ul>
                                                         </div>
                                                     {/if}
@@ -523,3 +533,13 @@
 		</div>
 	</main>
 </div>
+
+<ConfirmationModal
+    bind:this={deleteScheduleModal}
+    id="delete-schedule-modal"
+    title="Delete Schedule"
+    message="Are you sure you want to delete this schedule? All member availability data and organized parties for this schedule will be permanently removed."
+    confirmText="Delete Schedule"
+    type="error"
+    onConfirm={confirmDeleteSchedule}
+/>

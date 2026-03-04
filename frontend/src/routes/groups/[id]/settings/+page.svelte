@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
     import { toast } from '$lib/stores/toast.svelte';
 
@@ -14,6 +15,9 @@
 	let error = $state('');
     let members = $state<any[]>([]);
     let currentUser = $state<any>(null);
+
+    let deleteModal: ReturnType<typeof ConfirmationModal>;
+    let leaveModal: ReturnType<typeof ConfirmationModal>;
 
     let isManager = $derived(
 		members.find(m => m.id === currentUser?.id)?.role === 'MANAGER'
@@ -68,30 +72,25 @@
 		}
 	}
 
-	async function deleteGroup() {
-		if (confirm('Are you absolutely sure you want to delete this group? This action is irreversible.')) {
-			try {
-				await fetchApi(`/api/groups/${groupId}`, { method: 'DELETE' });
-				toast.success('Group deleted.');
-				window.location.href = `${base}/dashboard`;
-			} catch (err) {
-				console.error(err);
-				toast.error('Failed to delete group.');
-			}
-		}
+	async function onConfirmDelete() {
+        try {
+            await fetchApi(`/api/groups/${groupId}`, { method: 'DELETE' });
+            toast.success('Group deleted.');
+            window.location.href = `${base}/dashboard`;
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete group.');
+        }
 	}
 
-    async function leaveGroup() {
-        if (confirm('Are you sure you want to leave this group?')) {
-            try {
-                // To leave a group, we can delete our own membership
-                await fetchApi(`/api/groups/${groupId}/members/${currentUser.id}`, { method: 'DELETE' });
-                toast.success('You have left the group.');
-                window.location.href = `${base}/dashboard`;
-            } catch (err) {
-                console.error(err);
-                toast.error('Failed to leave group.');
-            }
+    async function onConfirmLeave() {
+        try {
+            await fetchApi(`/api/groups/${groupId}/members/${currentUser.id}`, { method: 'DELETE' });
+            toast.success('You have left the group.');
+            window.location.href = `${base}/dashboard`;
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to leave group.');
         }
     }
 </script>
@@ -182,15 +181,15 @@
 
 				<div class="card bg-base-100 shadow-xl mt-8 border-t-4 border-error">
 					<div class="card-body">
-						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu">Danger Zone</h3>
+						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu text-ubuntu text-ubuntu">Danger Zone</h3>
 						{#if isManager}
                             <p class="text-sm opacity-80 mb-4 font-neo">Deleting this group will remove all schedules, parties, and memberships permanently.</p>
-                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteGroup}>
+                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={() => deleteModal.show()}>
                                 Delete This Group
                             </button>
                         {:else}
                             <p class="text-sm opacity-80 mb-4 font-neo">Leaving this group will remove your access to its schedules and parties.</p>
-                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={leaveGroup}>
+                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={() => leaveModal.show()}>
                                 Leave This Group
                             </button>
                         {/if}
@@ -200,3 +199,23 @@
 		</div>
 	</main>
 </div>
+
+<ConfirmationModal
+    bind:this={deleteModal}
+    id="delete-group-modal"
+    title="Delete Group"
+    message="Are you absolutely sure you want to delete this group? All schedules, parties, and data will be permanently removed for all members."
+    confirmText="Delete Permanently"
+    type="error"
+    onConfirm={onConfirmDelete}
+/>
+
+<ConfirmationModal
+    bind:this={leaveModal}
+    id="leave-group-modal"
+    title="Leave Group"
+    message="Are you sure you want to leave this group? You will lose access to all its schedules and your availability data will be removed."
+    confirmText="Leave Group"
+    type="warning"
+    onConfirm={onConfirmLeave}
+/>

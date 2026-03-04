@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+    import ConfirmationModal from '$lib/components/ConfirmationModal.svelte';
 	import { fetchJson, fetchApi, ApiError } from '$lib/api';
     import { toast } from '$lib/stores/toast.svelte';
 
@@ -12,6 +13,8 @@
     let customNickname = $state('');
     let isSaving = $state(false);
     let isSyncing = $state(false);
+
+    let deleteModal: ReturnType<typeof ConfirmationModal>;
 
 	onMount(async () => {
         const params = new URLSearchParams(window.location.search);
@@ -89,19 +92,17 @@
         }
     }
 
-    async function deleteAccount() {
-        if (confirm('Are you absolutely sure you want to delete your account? This action is irreversible.')) {
-            try {
-                await fetchApi('/api/users/me', {
-                    method: 'DELETE'
-                });
+    async function confirmDelete() {
+        try {
+            await fetchApi('/api/users/me', {
+                method: 'DELETE'
+            });
 
-                toast.success('Account deleted successfully. We hope to see you again!');
-                logout();
-            } catch (err) {
-                console.error(err);
-                toast.error('Failed to delete account.');
-            }
+            toast.success('Account deleted successfully. We hope to see you again!');
+            logout();
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete account.');
         }
     }
 
@@ -227,7 +228,7 @@
                             <div class="bg-error/10 border border-error/20 p-6 rounded-lg mt-4">
                                 <h4 class="text-error font-bold text-lg mb-2 text-ubuntu">Danger Zone</h4>
                                 <p class="text-sm opacity-80 mb-4 font-neo">Deleting your account will remove all your data and dissociate your Discord account from Ark Resolver.</p>
-                                <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteAccount}>
+                                <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={() => deleteModal.show()}>
                                     Delete My Account
                                 </button>
                             </div>
@@ -238,3 +239,13 @@
 		</div>
 	</main>
 </div>
+
+<ConfirmationModal
+    bind:this={deleteModal}
+    id="delete-account-modal"
+    title="Delete Account"
+    message="Are you absolutely sure you want to delete your account? This action is irreversible and all your data will be permanently removed."
+    confirmText="Delete My Account"
+    type="error"
+    onConfirm={confirmDelete}
+/>
