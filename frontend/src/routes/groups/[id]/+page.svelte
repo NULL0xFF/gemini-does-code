@@ -61,14 +61,18 @@
             
             // Initialize 8x24 grid with zeros
             const grid = Array(8).fill(0).map(() => Array(24).fill(0));
-            const baseDate = new Date(startDate);
+            
+            // Create a base date object for the "start of day" in user's LOCAL timezone
+            // based on the schedule's absolute start time.
+            const scheduleStartAbs = new Date(startDate);
+            const baseDate = new Date(scheduleStartAbs);
             baseDate.setHours(0, 0, 0, 0);
 
             data.forEach(userAvail => {
                 userAvail.blocks.forEach((block: any) => {
                     const blockDate = new Date(block.start);
-                    // Compare timestamps directly to handle timezone issues correctly
-                    // Calculate hours from start of schedule base date (midnight)
+                    
+                    // Difference in milliseconds from the grid's local midnight base
                     const diffMs = blockDate.getTime() - baseDate.getTime();
                     const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
                     
@@ -129,6 +133,7 @@
 
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
+        // Add offset to the absolute date, then format in local timezone
 		d.setDate(d.getDate() + offsetDays);
 		const day = String(d.getDate()).padStart(2, '0');
         const weekdays = ['일', '월', '화', '수', '목', '금', '토'];

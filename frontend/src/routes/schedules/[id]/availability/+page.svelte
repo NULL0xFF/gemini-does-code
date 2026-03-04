@@ -94,14 +94,16 @@
 		try {
             // Convert boolean grid to list of time blocks for backend
             const timeBlocks = [];
-            const startDate = new Date(schedule.start);
-            startDate.setHours(0, 0, 0, 0); // Start from beginning of base date
+            
+            // baseDate is the local midnight of the day the schedule starts
+            const baseDate = new Date(schedule.start);
+            baseDate.setHours(0, 0, 0, 0);
             
             for (let d = 0; d < schedule.days; d++) {
                 for (let t = 0; t < 24; t++) {
                     if (selectedCells[d][t]) {
-                        // Use exact timestamp offsets to avoid timezone drift
-                        const start = new Date(startDate.getTime() + (d * 24 + t) * 60 * 60 * 1000);
+                        // Calculate exact start/end by adding hours to the local base
+                        const start = new Date(baseDate.getTime() + (d * 24 + t) * 60 * 60 * 1000);
                         const end = new Date(start.getTime() + 60 * 60 * 1000);
                         
                         timeBlocks.push({
@@ -135,9 +137,7 @@
             const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
             
             // We need the schedule start date to render the grid correctly
-            // Since we don't have groupId, we'll try to find it from user's groups
             const userGroups = await fetchJson<any[]>('/api/groups');
-            let found = false;
             for (const g of userGroups) {
                 const groupSchedules = await fetchJson<any[]>(`/api/groups/${g.id}/schedules`);
                 const s = groupSchedules.find((s: any) => s.id === scheduleId);
@@ -147,7 +147,6 @@
                         title: s.title,
                         start: s.start
                     };
-                    found = true;
                     break;
                 }
             }
@@ -158,6 +157,8 @@
 
                 myAvail.blocks.forEach((block: any) => {
                     const blockDate = new Date(block.start);
+                    
+                    // Difference in hours from our grid base (local midnight)
                     const diffMs = blockDate.getTime() - baseDate.getTime();
                     const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
                     
@@ -265,7 +266,7 @@
                                                 {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
-                                                title="{getFullDate(schedule.start, d)} {t}:00"
+                                                title="{formatDateOffset(schedule.start, d)} {t}:00"
                                             >
                                                 <div class="w-full h-8 min-w-[3rem]"></div>
                                             </td>
