@@ -189,6 +189,43 @@ public class GroupService {
         return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
     }
 
+    @Transactional
+    public void updateSchedule(UUID scheduleId, UUID managerId, String title, LocalDateTime start, LocalDateTime end) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new RuntimeException("Only managers can update schedules");
+        }
+
+        if (start == null || end == null || !end.isAfter(start)) {
+            throw new IllegalArgumentException("Invalid schedule time range");
+        }
+
+        schedule.setTitle(title);
+        schedule.setStartTime(start);
+        schedule.setEndTime(end);
+        scheduleRepository.save(schedule);
+    }
+
+    @Transactional
+    public void deleteSchedule(UUID scheduleId, UUID managerId) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new RuntimeException("Only managers can delete schedules");
+        }
+
+        scheduleRepository.delete(schedule);
+    }
+
     public List<ScheduleResponse> getGroupSchedules(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));

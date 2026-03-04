@@ -56,6 +56,24 @@ public class AvailabilityService {
         availabilityRepository.saveAll(newAvailabilities);
     }
 
+    public AvailabilityResponse getUserAvailability(UUID scheduleId, UUID userId) {
+        groupMemberRepository.findByGroupIdAndUserId(
+                scheduleRepository.findById(scheduleId).orElseThrow(() -> new RuntimeException("Schedule not found")).getGroup().getId(), 
+                userId
+        ).orElseThrow(() -> new RuntimeException("Access denied"));
+
+        List<AvailabilityBlock> blocks = availabilityRepository.findByScheduleIdAndUserId(scheduleId, userId).stream()
+                .map(a -> {
+                    AvailabilityBlock block = new AvailabilityBlock();
+                    block.setStart(a.getStartTime());
+                    block.setEnd(a.getEndTime());
+                    return block;
+                })
+                .collect(Collectors.toList());
+
+        return new AvailabilityResponse(userId, blocks);
+    }
+
     public List<AvailabilityResponse> getAggregatedAvailability(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Schedule not found"));

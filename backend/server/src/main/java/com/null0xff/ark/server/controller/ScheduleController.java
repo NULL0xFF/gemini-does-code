@@ -46,6 +46,13 @@ public class ScheduleController {
         return ResponseEntity.ok(availabilityService.getAggregatedAvailability(scheduleId, userId));
     }
 
+    @Operation(summary = "Get My Availability", description = "Retrieves the current user's previously submitted availability for a schedule.")
+    @GetMapping("/{scheduleId}/availability/me")
+    public ResponseEntity<AvailabilityResponse> getMyAvailability(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID scheduleId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(availabilityService.getUserAvailability(scheduleId, userId));
+    }
+
     @Operation(summary = "Create Party", description = "Creates a new party for the schedule (MANAGER only).")
     @PostMapping("/{scheduleId}/parties")
     public ResponseEntity<PartyResponse> createParty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID scheduleId, @RequestBody PartyRequest request) {

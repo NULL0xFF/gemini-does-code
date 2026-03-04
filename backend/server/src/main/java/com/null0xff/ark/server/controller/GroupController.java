@@ -139,4 +139,20 @@ public class GroupController {
         UUID userId = UUID.fromString(jwt.getSubject());
         return ResponseEntity.ok(groupService.getGroupSchedules(groupId, userId));
     }
+
+    @Operation(summary = "Update Schedule", description = "Updates an existing schedule (MANAGER only).")
+    @PutMapping("/schedules/{scheduleId}")
+    public ResponseEntity<Void> updateSchedule(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID scheduleId, @RequestBody ScheduleRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.updateSchedule(scheduleId, userId, request.getTitle(), request.getStartTime(), request.getEndTime());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Delete Schedule", description = "Permanently deletes a schedule and all its availability data (MANAGER only).")
+    @DeleteMapping("/schedules/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID scheduleId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.deleteSchedule(scheduleId, userId);
+        return ResponseEntity.ok().build();
+    }
 }
