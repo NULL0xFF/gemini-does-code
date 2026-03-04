@@ -42,6 +42,14 @@ public class AvailabilityService {
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
 
+        // Server-side validation: Ensure all blocks are within schedule range
+        for (AvailabilityBlock block : blocks) {
+            if (block.getStart().isBefore(schedule.getStartTime()) || 
+                block.getEnd().isAfter(schedule.getEndTime())) {
+                throw new RuntimeException("Availability block outside of schedule range");
+            }
+        }
+
         availabilityRepository.deleteByScheduleIdAndUserId(scheduleId, userId);
 
         List<MemberAvailability> newAvailabilities = blocks.stream().map(block -> {
