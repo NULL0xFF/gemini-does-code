@@ -7,9 +7,15 @@
 
 	let scheduleId = $derived($page.params.id);
     let schedule = $state<any>(null);
+    let members = $state<any[]>([]);
 	let title = $state('');
 	let raidType = $state('');
 	let maxMembers = $state(8);
+
+    // Heatmap state
+    let heatmapData = $state<any>(null); // [day][hour] = count
+    let rawAvailability = $state<any[]>([]);
+    let selectedCell = $state<{d: number, t: number, members: string[]} | null>(null);
 	
 	// Initialize with current date and time, formatted for datetime-local (YYYY-MM-DDThh:mm)
 	const getInitialTime = () => {
@@ -25,6 +31,91 @@
 		localStorage.removeItem('ark_token');
 		window.location.href = `${base}/`;
 	}
+
+    async function fetchHeatmapData() {
+        try {
+            const availData = await fetchJson<any[]>(`/api/schedules/${scheduleId}/availability`);
+            rawAvailability = availData;
+
+            // We need members list to calculate total ratio for colors
+            // First try to find groupId from the schedule object
+            if (schedule?.group?.id) {
+                members = await fetchJson<any[]>(`/api/groups/${schedule.group.id}/members`);
+            } else {
+                // Fallback: search user groups
+                const userGroups = await fetchJson<any[]>('/api/groups');
+                for (const g of userGroups) {
+                    const groupSchedules = await fetchJson<any[]>(`/api/groups/${g.id}/schedules`);
+                    if (groupSchedules.find((s: any) => s.id === scheduleId)) {
+                        members = await fetchJson<any[]>(`/api/groups/${g.id}/members`);
+                        break;
+                    }
+                }
+            }
+
+            if (schedule?.start) {
+                const grid = Array(8).fill(0).map(() => Array(24).fill(0));
+                const baseDate = new Date(schedule.start);
+                baseDate.setHours(0, 0, 0, 0);
+
+                availData.forEach(userAvail => {
+                    userAvail.blocks.forEach((block: any) => {
+                        const blockDate = new Date(block.start);
+                        const diffMs = blockDate.getTime() - baseDate.getTime();
+                        const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+                        const d = Math.floor(diffHoursTotal / 24);
+                        const t = diffHoursTotal % 24;
+
+                        if (d >= 0 && d < 8 && t >= 0 && t < 24) {
+                            grid[d][t]++;
+                        }
+                    });
+                });
+                heatmapData = grid;
+            }
+        } catch (err) {
+            console.error('Failed to fetch heatmap data:', err);
+        }
+    }
+
+    function getAvailableMembers(d: number, t: number) {
+        if (!schedule?.start) return [];
+        const baseDate = new Date(schedule.start);
+        baseDate.setHours(0, 0, 0, 0);
+        const targetTime = baseDate.getTime() + (d * 24 + t) * 60 * 60 * 1000;
+
+        return rawAvailability
+            .filter(userAvail => 
+                userAvail.blocks.some((b: any) => new Date(b.start).getTime() === targetTime)
+            )
+            .map(ua => {
+                const m = members.find(m => m.id === ua.userId);
+                return m ? (m.username) : 'Unknown';
+            });
+    }
+
+    function handleCellClick(d: number, t: number) {
+        const availMembers = getAvailableMembers(d, t);
+        selectedCell = { d, t, members: availMembers };
+    }
+
+    function formatDateOffset(dateString: string, offsetDays: number) {
+		const d = new Date(dateString);
+		d.setDate(d.getDate() + offsetDays);
+		const day = String(d.getDate()).padStart(2, '0');
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        return `${day} (${weekdays[d.getDay()]})`;
+	}
+
+    function getHeatmapClass(count: number) {
+        if (!count) return 'bg-base-100';
+        const total = Math.max(members.length, 1);
+        const ratio = count / total;
+        if (ratio >= 0.8) return 'bg-success text-success-content';
+        if (ratio >= 0.5) return 'bg-primary text-primary-content';
+        if (ratio >= 0.2) return 'bg-info text-info-content';
+        return 'bg-warning text-warning-content';
+    }
 
 	async function handleSubmit() {
 		if (!title.trim() || !startTime) return;
@@ -57,6 +148,7 @@
         try {
             // Fetch schedule details directly
             schedule = await fetchJson<any>(`/api/schedules/${scheduleId}`);
+            await fetchHeatmapData();
         } catch (err) {
             console.error('Failed to load schedule context:', err);
         }
@@ -96,13 +188,122 @@
 
             <div class="space-y-8">
                 <!-- Heatmap Reference (Full Width) -->
-                <div class="card bg-base-100 shadow-xl border-t-4 border-info">
-                    <div class="card-body">
-                        <h3 class="card-title text-ubuntu">Heatmap Reference</h3>
-                        <p class="text-sm opacity-70 mb-4">Use the aggregated availability to pick the best start time for this party.</p>
-                        
-                        <div class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center border border-dashed border-base-300">
-                            <span class="opacity-50 text-sm italic">(Heatmap visual placeholder)</span>
+                <div class="card bg-base-100 shadow-xl border-t-4 border-info overflow-hidden">
+                    <div class="card-body relative p-0 sm:p-4">
+                        <div class="p-4 sm:p-0">
+                            <h3 class="card-title text-ubuntu">Heatmap Reference</h3>
+                            <p class="text-sm opacity-70 mb-4">Click a cell to see who is available. Use this to pick the best start time.</p>
+                        </div>
+
+                        <div class="relative bg-base-200 rounded-lg overflow-hidden border border-base-300">
+                            {#if !heatmapData}
+                                <div class="w-full h-64 flex items-center justify-center italic opacity-50">
+                                    <span class="loading loading-spinner loading-md mr-2"></span>
+                                    Loading schedule availability...
+                                </div>
+                            {:else}
+                                <!-- Grid Container -->
+                                <div class="overflow-x-auto p-2 sm:p-4">
+                                    <!-- Desktop Grid -->
+                                    <table class="table table-xs w-full text-center border-collapse hidden md:table">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-16"></th>
+                                                {#each Array(24) as _, i}
+                                                    <th class="font-mono text-[10px] w-6 opacity-60 p-0">{i}</th>
+                                                {/each}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {#each Array(8) as _, d}
+                                                <tr>
+                                                    <th class="font-mono whitespace-nowrap text-[10px] px-1 py-2 opacity-60 text-right">{formatDateOffset(schedule.start, d)}</th>
+                                                    {#each Array(24) as _, t}
+                                                        <td 
+                                                            class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
+                                                            onclick={() => handleCellClick(d, t)}
+                                                        >
+                                                            <div class="w-full h-6 text-[9px] flex items-center justify-center font-bold">
+                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                            </div>
+                                                        </td>
+                                                    {/each}
+                                                </tr>
+                                            {/each}
+                                        </tbody>
+                                    </table>
+
+                                    <!-- Mobile Grid -->
+                                    <table class="table table-xs w-full text-center border-collapse md:hidden">
+                                        <thead>
+                                            <tr>
+                                                <th class="w-8"></th>
+                                                {#each Array(8) as _, d}
+                                                    <th class="font-mono text-[10px] opacity-60 p-1">{formatDateOffset(schedule.start, d).split(' ')[0]}</th>
+                                                {/each}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {#each Array(24) as _, t}
+                                                <tr>
+                                                    <th class="font-mono text-[10px] opacity-60 p-0">{t}</th>
+                                                    {#each Array(8) as _, d}
+                                                        <td 
+                                                            class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
+                                                            onclick={() => handleCellClick(d, t)}
+                                                        >
+                                                            <div class="w-full h-6 min-w-[2rem] text-[9px] flex items-center justify-center font-bold">
+                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                            </div>
+                                                        </td>
+                                                    {/each}
+                                                </tr>
+                                            {/each}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Member Drawer Overlay (Right Side) -->
+                                {#if selectedCell}
+                                    <div class="absolute inset-y-0 right-0 w-64 bg-base-100 shadow-2xl border-l border-base-300 z-20 flex flex-col animate-in slide-in-from-right duration-200">
+                                        <div class="p-4 border-b border-base-300 flex justify-between items-center bg-base-200">
+                                            <div>
+                                                <p class="font-bold text-sm text-ubuntu">{formatDateOffset(schedule.start, selectedCell.d)}</p>
+                                                <p class="text-xs opacity-60 font-mono">{selectedCell.t}:00 - Available ({selectedCell.members.length})</p>
+                                            </div>
+                                            <button class="btn btn-ghost btn-xs btn-circle" onclick={() => selectedCell = null}>✕</button>
+                                        </div>
+                                        <div class="flex-1 overflow-y-auto p-4">
+                                            {#if selectedCell.members.length === 0}
+                                                <p class="text-xs opacity-50 italic text-center py-8">No one is available at this time.</p>
+                                            {:else}
+                                                <ul class="space-y-2">
+                                                    {#each selectedCell.members as name}
+                                                        <li class="flex items-center gap-2 text-sm">
+                                                            <div class="w-2 h-2 rounded-full bg-success"></div>
+                                                            <span class="font-neo">{name}</span>
+                                                        </li>
+                                                    {/each}
+                                                </ul>
+                                            {/if}
+                                        </div>
+                                        <div class="p-4 bg-base-200 border-t border-base-300">
+                                            <button 
+                                                class="btn btn-primary btn-sm w-full"
+                                                onclick={() => {
+                                                    const d = new Date(schedule.start);
+                                                    d.setDate(d.getDate() + selectedCell.d);
+                                                    d.setHours(selectedCell.t, 0, 0, 0);
+                                                    startTime = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                                                    selectedCell = null;
+                                                }}
+                                            >
+                                                Use This Time
+                                            </button>
+                                        </div>
+                                    </div>
+                                {/if}
+                            {/if}
                         </div>
                     </div>
                 </div>
