@@ -162,7 +162,7 @@
 									<h2 class="card-title text-ubuntu font-bold">Join a Group</h2>
 									<p class="opacity-70 text-sm">Use an invite code to join an existing group roster.</p>
 									<div class="card-actions justify-end mt-4">
-										<button class="btn btn-secondary btn-sm md:btn-md">Enter Code</button>
+										<a href="{base}/groups/join" class="btn btn-secondary btn-sm md:btn-md">Enter Code</a>
 									</div>
 								</div>
 							</div>

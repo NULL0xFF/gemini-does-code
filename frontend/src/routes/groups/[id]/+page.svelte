@@ -143,7 +143,7 @@
 						<div class="flex justify-between items-center">
 							<h3 class="text-2xl font-bold text-ubuntu">Schedules</h3>
 							{#if isManager}
-								<button class="btn btn-sm btn-secondary">New Schedule</button>
+								<a href="{base}/groups/{groupId}/schedules/create" class="btn btn-sm btn-secondary">New Schedule</a>
 							{/if}
 						</div>
 
@@ -168,13 +168,13 @@
 												<p class="text-sm opacity-70 mt-1 font-mono">{schedule.start} ~ {schedule.end}</p>
 											</div>
 											<div class="flex gap-2">
-												<button class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</button>
+												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</a>
 												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id)}>
 													{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
 												</button>
 											</div>
 										</div>
-										<button class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</button>
+										<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</a>
 
 										{#if openHeatmapId === schedule.id}
 											<div class="mt-4 bg-base-200 p-2 rounded-lg">
@@ -234,7 +234,7 @@
 											<div class="flex justify-between items-center mb-3">
 												<h5 class="text-md font-bold text-ubuntu">Parties</h5>
 												{#if isManager}
-													<button class="btn btn-xs btn-outline btn-secondary">Add Party</button>
+													<a href="{base}/schedules/{schedule.id}/parties/create" class="btn btn-xs btn-outline btn-secondary">Add Party</a>
 												{/if}
 											</div>
 											<div class="space-y-2">
