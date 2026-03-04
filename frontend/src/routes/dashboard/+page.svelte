@@ -143,7 +143,7 @@
 									{:else}
 										<div class="space-y-3 mt-2">
 											{#each groups as group}
-												<div class="p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors cursor-pointer group">
+												<a href="{base}/groups/{group.id}" class="p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors cursor-pointer group block">
 													<div class="flex justify-between items-center">
 														<span class="font-bold text-sm text-ubuntu">{group.name}</span>
 														<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg>
@@ -151,7 +151,7 @@
 													{#if group.description}
 														<p class="text-xs opacity-60 truncate mt-1">{group.description}</p>
 													{/if}
-												</div>
+												</a>
 											{/each}
 										</div>
 									{/if}
