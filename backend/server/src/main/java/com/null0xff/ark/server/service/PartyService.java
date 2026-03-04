@@ -41,13 +41,13 @@ public class PartyService {
     @Transactional
     public PartyResponse createParty(UUID scheduleId, UUID managerId, PartyRequest request) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
 
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
         if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can create parties");
+            throw new ForbiddenException("Only managers can create parties", scheduleId);
         }
 
         Party party = new Party();
@@ -64,10 +64,10 @@ public class PartyService {
 
     public List<PartyResponse> getScheduleParties(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
         return partyRepository.findByScheduleIdOrderByStartTimeAsc(scheduleId).stream().map(party -> {
             List<PartyMember> members = partyMemberRepository.findByPartyId(party.getId());
@@ -84,23 +84,23 @@ public class PartyService {
     @Transactional
     public void joinParty(UUID partyId, UUID userId) {
         Party party = partyRepository.findById(partyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Party not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
 
         groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), userId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
 
         int currentMembers = partyMemberRepository.countByPartyId(partyId);
         if (currentMembers >= party.getMaxMembers()) {
-            throw new ValidationException("Party is full");
+            throw new ValidationException("Party is full", partyId);
         }
 
         Optional<PartyMember> existing = partyMemberRepository.findByPartyIdAndUserId(partyId, userId);
         if (existing.isPresent()) {
-            throw new ValidationException("You are already in this party");
+            throw new ValidationException("You are already in this party", partyId);
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found", userId));
 
         PartyMember member = new PartyMember();
         member.setParty(party);
@@ -111,7 +111,7 @@ public class PartyService {
     @Transactional
     public void leaveParty(UUID partyId, UUID userId) {
         PartyMember member = partyMemberRepository.findByPartyIdAndUserId(partyId, userId)
-                .orElseThrow(() -> new ValidationException("You are not in this party"));
+                .orElseThrow(() -> new ValidationException("You are not in this party", partyId));
         
         partyMemberRepository.delete(member);
     }

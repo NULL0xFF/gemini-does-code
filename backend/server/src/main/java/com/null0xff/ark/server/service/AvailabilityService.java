@@ -37,19 +37,19 @@ public class AvailabilityService {
     @Transactional
     public void updateAvailability(UUID scheduleId, UUID userId, List<AvailabilityBlock> blocks) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found", userId));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
         // Server-side validation: Ensure all blocks are within schedule range
         for (AvailabilityBlock block : blocks) {
             if (block.getStart().isBefore(schedule.getStartTime()) || 
                 block.getEnd().isAfter(schedule.getEndTime())) {
-                throw new ValidationException("Availability block outside of schedule range");
+                throw new ValidationException("Availability block outside of schedule range", scheduleId);
             }
         }
 
@@ -69,10 +69,10 @@ public class AvailabilityService {
 
     public AvailabilityResponse getUserAvailability(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
         List<AvailabilityBlock> blocks = availabilityRepository.findByScheduleIdAndUserId(scheduleId, userId).stream()
                 .map(a -> {
@@ -88,10 +88,10 @@ public class AvailabilityService {
 
     public List<AvailabilityResponse> getAggregatedAvailability(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
 
         groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
-                .orElseThrow(() -> new ForbiddenException("Access denied"));
+                .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
         List<MemberAvailability> availabilities = availabilityRepository.findByScheduleId(scheduleId);
 
