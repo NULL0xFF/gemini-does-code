@@ -1,8 +1,10 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let groupId = $derived($page.params.id);
 	
@@ -12,10 +14,7 @@
 	let isGenerating = $state(false);
 
 	// List state
-	let activeCodes = $state([
-		{ code: 'ARK-W8BX-P2Q9', max: 5, used: 2, expires: '2026-03-10' },
-		{ code: 'ARK-K9L1-M4N5', max: 1, used: 0, expires: '2026-03-05' }
-	]);
+	let activeCodes = $state<any[]>([]);
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -46,13 +45,13 @@
 			});
 
 			await fetchInvites();
-			alert('Invite code generated successfully!');
+			toast.success('Invite code generated!');
 			
 			maxUsage = 1;
 			expirationDays = 7;
 		} catch (err) {
 			console.error(err);
-			alert('Failed to generate invite code.');
+			toast.error('Failed to generate code.');
 		} finally {
 			isGenerating = false;
 		}
@@ -65,17 +64,17 @@
 					method: 'DELETE'
 				});
 				await fetchInvites();
+                toast.success('Code revoked.');
 			} catch (err) {
 				console.error(err);
-				alert('Failed to revoke code.');
+				toast.error('Failed to revoke code.');
 			}
 		}
 	}
 
 	function copyToClipboard(text: string) {
 		navigator.clipboard.writeText(text).then(() => {
-			// Simple visual feedback could be added here
-			alert('Copied to clipboard!');
+			toast.info('Copied to clipboard!');
 		});
 	}
 </script>

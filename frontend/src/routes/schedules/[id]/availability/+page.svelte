@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let scheduleId = $derived($page.params.id);
 	let isSubmitting = $state(false);
@@ -108,6 +109,52 @@
 		return d >= minD && d <= maxD && t >= minT && t <= maxT;
 	}
 
+    async function loadData() {
+        try {
+            // Fetch schedule details directly using the new endpoint
+            const s = await fetchJson<any>(`/api/schedules/${scheduleId}`);
+            if (s) {
+                schedule = {
+                    ...schedule,
+                    title: s.title,
+                    start: s.start,
+                    end: s.end
+                };
+            }
+
+            // Fetch existing availability
+            const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
+            
+            if (myAvail && myAvail.blocks && schedule.start) {
+                const baseDate = new Date(schedule.start);
+                baseDate.setHours(0, 0, 0, 0);
+
+                // Clear before loading
+                selectedCells = Array(8).fill(null).map(() => Array(24).fill(false));
+
+                myAvail.blocks.forEach((block: any) => {
+                    const blockDate = new Date(block.start);
+                    
+                    // Difference in hours from our grid base (local midnight)
+                    const diffMs = blockDate.getTime() - baseDate.getTime();
+                    const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
+                    
+                    const d = Math.floor(diffHoursTotal / 24);
+                    const t = diffHoursTotal % 24;
+
+                    if (d >= 0 && d < 8 && t >= 0 && t < 24) {
+                        if (!isCellDisabled(d, t)) {
+                            selectedCells[d][t] = true;
+                        }
+                    }
+                });
+                selectedCells = [...selectedCells];
+            }
+        } catch (err) {
+            console.error('Failed to load existing availability:', err);
+        }
+    }
+
 	async function handleSubmit() {
 		isSubmitting = true;
 		try {
@@ -138,12 +185,13 @@
 				body: JSON.stringify({ blocks: timeBlocks })
 			});
 
-			alert('Availability saved successfully!');
+			toast.success('Availability saved!');
 			window.history.back();
 		} catch (err) {
 			console.error(err);
 			if (!(err instanceof ApiError && err.status === 401)) {
-				alert('An error occurred while submitting availability.');
+				toast.error('Failed to save. Syncing with server...');
+                await loadData();
 			}
 		} finally {
 			isSubmitting = false;
@@ -151,47 +199,7 @@
 	}
 
     onMount(async () => {
-        try {
-            // Fetch schedule details directly using the new endpoint
-            const s = await fetchJson<any>(`/api/schedules/${scheduleId}`);
-            if (s) {
-                schedule = {
-                    ...schedule,
-                    title: s.title,
-                    start: s.start,
-                    end: s.end
-                };
-            }
-
-            // Fetch existing availability
-            const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
-            
-            if (myAvail && myAvail.blocks && schedule.start) {
-                const baseDate = new Date(schedule.start);
-                baseDate.setHours(0, 0, 0, 0);
-
-                myAvail.blocks.forEach((block: any) => {
-                    const blockDate = new Date(block.start);
-                    
-                    // Difference in hours from our grid base (local midnight)
-                    const diffMs = blockDate.getTime() - baseDate.getTime();
-                    const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
-                    
-                    const d = Math.floor(diffHoursTotal / 24);
-                    const t = diffHoursTotal % 24;
-
-                    if (d >= 0 && d < 8 && t >= 0 && t < 24) {
-                        // Double check range even when loading from DB
-                        if (!isCellDisabled(d, t)) {
-                            selectedCells[d][t] = true;
-                        }
-                    }
-                });
-                selectedCells = [...selectedCells];
-            }
-        } catch (err) {
-            console.error('Failed to load existing availability:', err);
-        }
+        await loadData();
     });
 </script>
 
@@ -253,7 +261,7 @@
                                                 onmouseenter={() => handleMouseEnter(d, t)}
                                                 title={isCellDisabled(d, t) ? 'Outside schedule range' : `${formatDateOffset(schedule.start, d)} ${t}:00`}
                                             >
-                                                <div class="w-full h-8 min-w-[2.5rem]"></div>
+                                                <div class="w-full h-8"></div>
                                             </td>
                                         {/each}
                                     </tr>
@@ -281,7 +289,7 @@
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
                                                 class="border border-base-300 transition-colors p-0 
-                                                {isCellDisabled(d, t) ? 'bg-base-200 cursor-not-allowed opacity-50' : 'cursor-crosshair ' + (isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300'))}"
+                                                {isCellDisabled(d, t) ? 'bg-base-200 cursor-not-allowed opacity-50' : 'cursor-not-allowed opacity-50' && isCellDisabled(d, t) ? 'bg-base-200' : 'cursor-crosshair ' + (isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300'))}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
                                                 title={isCellDisabled(d, t) ? 'Outside schedule range' : `${formatDateOffset(schedule.start, d)} ${t}:00`}

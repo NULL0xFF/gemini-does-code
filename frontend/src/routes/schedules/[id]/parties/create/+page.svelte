@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let scheduleId = $derived($page.params.id);
     let schedule = $state<any>(null);
@@ -132,12 +133,12 @@
 				})
 			});
 
-			alert('Party created successfully!');
+			toast.success('Party created successfully!');
 			window.history.back();
 		} catch (err) {
 			console.error(err);
 			if (!(err instanceof ApiError && err.status === 401)) {
-				alert('Failed to create party. Please check your inputs.');
+				toast.error('Failed to create party.');
 			}
 		} finally {
 			isSubmitting = false;

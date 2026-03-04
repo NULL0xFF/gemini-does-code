@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let inviteCode = $state('');
 	let isSubmitting = $state(false);
@@ -25,12 +26,10 @@
 			window.location.href = `${base}/dashboard?group_joined=success`;
 		} catch (err) {
 			console.error(err);
-			if (err instanceof ApiError && err.status === 404) {
-				alert('Join endpoint not yet implemented.');
-			} else if (err instanceof ApiError && err.status === 400) {
-				alert('Invalid or expired invite code.');
+			if (err instanceof ApiError && err.status === 400) {
+				toast.error('Invalid or expired invite code.');
 			} else if (!(err instanceof ApiError && err.status === 401)) {
-				alert('An error occurred while joining the group.');
+				toast.error('An error occurred while joining the group.');
 			}
 		} finally {
 			isSubmitting = false;

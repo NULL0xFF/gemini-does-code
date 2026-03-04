@@ -3,6 +3,7 @@
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let groupId = $derived($page.params.id);
 	let title = $state('');
@@ -56,11 +57,12 @@
 				})
 			});
 
-			window.location.href = `${base}/groups/${groupId}?schedule_created=success`;
+            toast.success('Schedule created successfully!');
+			window.location.href = `${base}/groups/${groupId}`;
 		} catch (err) {
 			console.error(err);
 			if (!(err instanceof ApiError && err.status === 401)) {
-				alert('An error occurred while creating the schedule.');
+				toast.error('Failed to create schedule.');
 			}
 		} finally {
 			isSubmitting = false;

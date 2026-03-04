@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let groupId = $derived($page.params.id);
 	let groupName = $state('');
@@ -45,11 +46,11 @@
 				})
 			});
 
-			alert('Group settings updated successfully!');
+			toast.success('Group settings updated!');
 			window.location.href = `${base}/groups/${groupId}`;
 		} catch (err) {
 			console.error(err);
-			alert('Failed to update group settings.');
+			toast.error('Failed to update group settings.');
 		} finally {
 			isSaving = false;
 		}
@@ -59,11 +60,11 @@
 		if (confirm('Are you absolutely sure you want to delete this group? This action is irreversible.')) {
 			try {
 				await fetchApi(`/api/groups/${groupId}`, { method: 'DELETE' });
-				alert('Group deleted successfully.');
+				toast.success('Group deleted.');
 				window.location.href = `${base}/dashboard`;
 			} catch (err) {
 				console.error(err);
-				alert('Failed to delete group.');
+				toast.error('Failed to delete group.');
 			}
 		}
 	}

@@ -4,6 +4,7 @@
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, fetchJson, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let groupId = $derived($page.params.id);
 	let group = $state<any>(null);
@@ -116,9 +117,10 @@
                     })
                 });
                 await fetchData();
+                toast.success('Schedule renamed.');
             } catch (err) {
                 console.error(err);
-                alert('Failed to rename schedule.');
+                toast.error('Failed to rename schedule.');
             }
         }
     }
@@ -128,9 +130,10 @@
             try {
                 await fetchApi(`/api/groups/schedules/${scheduleId}`, { method: 'DELETE' });
                 await fetchData();
+                toast.success('Schedule deleted.');
             } catch (err) {
                 console.error(err);
-                alert('Failed to delete schedule.');
+                toast.error('Failed to delete schedule.');
             }
         }
     }
@@ -172,9 +175,12 @@
 		try {
 			await fetchApi(`/api/parties/${partyId}/join`, { method: 'POST' });
 			await fetchParties(scheduleId);
+            toast.success('Joined the party!');
 		} catch (err) {
 			console.error(err);
-			alert('Failed to join party. It might be full or you are already a member.');
+            // State conflict (already joined/full), refresh data
+            await fetchParties(scheduleId);
+            toast.error('Failed to join. Syncing latest data...');
 		}
 	}
 
@@ -182,9 +188,11 @@
 		try {
 			await fetchApi(`/api/parties/${partyId}/leave`, { method: 'POST' });
 			await fetchParties(scheduleId);
+            toast.success('Left the party.');
 		} catch (err) {
 			console.error(err);
-			alert('Failed to leave party.');
+            await fetchParties(scheduleId);
+            toast.error('Failed to leave. Syncing latest data...');
 		}
 	}
 
@@ -351,7 +359,7 @@
 																<tr>
 																	<th class="font-mono px-0 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{t}</th>
 																	{#each Array(8) as _, d}
-																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{getFullDate(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
 																			<div class="w-full h-4 min-w-[2rem] flex items-center justify-center text-[8px] font-bold">
                                                                                 {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
                                                                             </div>

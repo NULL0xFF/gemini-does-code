@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { fetchApi, ApiError } from '$lib/api';
+    import { toast } from '$lib/stores/toast.svelte';
 
 	let groupName = $state('');
 	let description = $state('');
@@ -28,10 +29,8 @@
 			window.location.href = `${base}/dashboard?group_created=success`;
 		} catch (err) {
 			console.error(err);
-			if (err instanceof ApiError && err.status === 404) {
-				alert('Group creation backend not yet implemented.');
-			} else if (!(err instanceof ApiError && err.status === 401)) {
-				alert('An error occurred while creating the group.');
+			if (!(err instanceof ApiError && err.status === 401)) {
+				toast.error('An error occurred while creating the group.');
 			}
 		} finally {
 			isSubmitting = false;
