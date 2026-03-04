@@ -161,29 +161,56 @@
 										</div>
 
 										{#if openHeatmapId === schedule.id}
-											<div class="mt-4 overflow-x-auto bg-base-200 p-2 rounded-lg">
-												<table class="table table-xs w-full text-center border-separate border-spacing-0">
-													<thead>
-														<tr>
-															<th class="border border-base-300 sticky left-0 bg-base-200 w-12"></th>
-															{#each Array(24) as _, i}
-																<th class="font-mono px-0 border border-base-300 text-[10px] w-5">{i}</th>
-															{/each}
-														</tr>
-													</thead>
-													<tbody>
-														{#each Array(8) as _, d}
+											<div class="mt-4 bg-base-200 p-2 rounded-lg">
+												<div class="hidden md:block overflow-x-auto">
+													<table class="table table-xs w-full text-center border-separate border-spacing-0">
+														<thead>
 															<tr>
-																<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px]">{formatDateOffset(schedule.start, d)}</th>
-																{#each Array(24) as _, t}
-																	<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
-																		<div class="w-full h-4"></div>
-																	</td>
+																<th class="border border-base-300 sticky left-0 bg-base-200 w-12 z-10"></th>
+																{#each Array(24) as _, i}
+																	<th class="font-mono px-0 border border-base-300 text-[10px] w-5">{i}</th>
 																{/each}
 															</tr>
-														{/each}
-													</tbody>
-												</table>
+														</thead>
+														<tbody>
+															{#each Array(8) as _, d}
+																<tr>
+																	<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{formatDateOffset(schedule.start, d)}</th>
+																	{#each Array(24) as _, t}
+																		<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
+																			<div class="w-full h-4"></div>
+																		</td>
+																	{/each}
+																</tr>
+															{/each}
+														</tbody>
+													</table>
+												</div>
+
+												<div class="md:hidden overflow-x-auto">
+													<table class="table table-xs w-full text-center border-separate border-spacing-0">
+														<thead>
+															<tr>
+																<th class="border border-base-300 sticky left-0 bg-base-200 w-8 z-10"></th>
+																{#each Array(8) as _, d}
+																	<th class="font-mono px-1 py-1 border border-base-300 text-[10px] whitespace-nowrap">{formatDateOffset(schedule.start, d)}</th>
+																{/each}
+															</tr>
+														</thead>
+														<tbody>
+															{#each Array(24) as _, t}
+																<tr>
+																	<th class="font-mono px-0 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{t}</th>
+																	{#each Array(8) as _, d}
+																		<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
+																			<div class="w-full h-4 min-w-[2rem]"></div>
+																		</td>
+																	{/each}
+																</tr>
+															{/each}
+														</tbody>
+													</table>
+												</div>
 											</div>
 										{/if}
 
