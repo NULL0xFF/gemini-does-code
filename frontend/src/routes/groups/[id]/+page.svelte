@@ -24,20 +24,24 @@
 	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
 
 	async function fetchData() {
-		try {
-			const [groupData, memberData, scheduleData, userData] = await Promise.all([
-				fetchJson<any>(`/api/groups/${groupId}`),
-				fetchJson<any[]>(`/api/groups/${groupId}/members`),
-				fetchJson<any[]>(`/api/groups/${groupId}/schedules`),
-				fetchJson<any>('/api/users/me')
-			]);
-			
-			group = groupData;
-			members = memberData;
-			schedules = scheduleData;
-			currentUser = userData;
-		} catch (err) {
-			console.error(err);
+	        try {
+	                const [groupData, memberData, scheduleData, userData] = await Promise.all([
+	                        fetchJson<any>(`/api/groups/${groupId}`),
+	                        fetchJson<any[]>(`/api/groups/${groupId}/members`),
+	                        fetchJson<any[]>(`/api/groups/${groupId}/schedules`),
+	                        fetchJson<any>('/api/users/me')
+	                ]);
+
+	                group = groupData;
+	                members = memberData;
+	                schedules = scheduleData;
+	                currentUser = userData;
+
+	                // Eagerly fetch parties for all discovered schedules
+	                if (schedules.length > 0) {
+	                    await Promise.all(schedules.map(s => fetchParties(s.id)));
+	                }
+	        } catch (err) {			console.error(err);
 			if (!(err instanceof ApiError && err.status === 401)) {
 				error = 'Failed to load group details.';
 			}
