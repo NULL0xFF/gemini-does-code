@@ -273,7 +273,7 @@
 	</div>
 
 	<main class="flex-1 p-4 md:p-8">
-		<div class="container mx-auto max-6xl">
+		<div class="container mx-auto max-w-6xl">
 			<div class="flex items-center gap-4 mb-8">
 				<a href="{base}/dashboard" class="btn btn-ghost btn-circle" aria-label="Back to Dashboard">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
@@ -466,36 +466,36 @@
 												{#each parties.filter(p => p.scheduleId === schedule.id) as party}
 													<!-- svelte-ignore a11y_click_events_have_key_events -->
 													<!-- svelte-ignore a11y_no_static_element_interactions -->
-													<div class="bg-base-200 rounded-md overflow-hidden transition-all duration-200 border {expandedPartyId === party.id ? 'border-primary shadow-sm' : 'border-transparent'}">
+													<div class="bg-base-200 rounded-md transition-all duration-200 border {expandedPartyId === party.id ? 'border-primary shadow-sm' : 'border-transparent'}">
 														<div 
-															class="flex justify-between items-center p-3 hover:bg-base-300 cursor-pointer"
+															class="flex justify-between items-center p-3 hover:bg-base-300 cursor-pointer rounded-md"
 															onclick={() => toggleParty(party.id, schedule.id)}
 														>
-															<div class="flex items-center gap-3">
-																<span class="font-bold text-sm text-neo">{party.title}</span>
-																<span class="text-xs opacity-60 font-mono">({party.members}/{party.max})</span>
+															<div class="flex items-center gap-3 overflow-hidden mr-2">
+																<span class="font-bold text-sm text-neo truncate">{party.title}</span>
+																<span class="text-xs opacity-60 font-mono shrink-0">({party.members}/{party.max})</span>
+															</div>
+															<div class="flex items-center gap-2 shrink-0">
                                                                 {#if isManager}
-                                                                    <div class="dropdown dropdown-end dropdown-bottom" onclick={(e) => e.stopPropagation()}>
+                                                                    <div class="dropdown dropdown-end dropdown-left" onclick={(e) => e.stopPropagation()}>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                                         <!-- svelte-ignore a11y_label_has_associated_control -->
                                                                         <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
                                                                         </label>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                                        <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-24 border border-base-200">
+                                                                        <ul tabindex="0" class="dropdown-content z-[30] menu p-2 shadow bg-base-100 rounded-box w-24 border border-base-200">
                                                                             <li><button class="text-xs text-error" onclick={() => requestDeleteParty(party)}>Delete</button></li>
                                                                         </ul>
                                                                     </div>
                                                                 {/if}
-															</div>
-															<div class="flex items-center gap-2">
-																<span class="badge badge-sm badge-outline">{party.status}</span>
+																<span class="badge badge-sm badge-outline hidden sm:flex">{party.status}</span>
 																<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 															</div>
 														</div>
 														
 														{#if expandedPartyId === party.id}
-															<div class="p-4 bg-base-100 border-t border-base-300 text-sm">
+															<div class="p-4 bg-base-100 border-t border-base-300 text-sm rounded-b-md">
 																<div class="flex justify-between items-start mb-4">
 																	<div>
 																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
