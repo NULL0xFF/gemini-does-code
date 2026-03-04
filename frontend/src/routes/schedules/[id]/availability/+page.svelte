@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { fetchApi, ApiError } from '$lib/api';
+	import { fetchApi, fetchJson, ApiError } from '$lib/api';
 
 	let scheduleId = $derived($page.params.id);
 	let isSubmitting = $state(false);
@@ -10,8 +11,8 @@
     // Mock schedule data for the UI
     let schedule = $state({
         id: scheduleId,
-        title: 'March Week 1 Reset',
-        start: '2026-03-04', // YYYY-MM-DD
+        title: 'Loading...',
+        start: new Date().toISOString(), // Fallback
         days: 8
     });
 
@@ -31,10 +32,17 @@
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
 		d.setDate(d.getDate() + offsetDays);
-		const month = String(d.getMonth() + 1).padStart(2, '0');
 		const day = String(d.getDate()).padStart(2, '0');
-		return `${month}-${day}`;
+        const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+        const weekday = weekdays[d.getDay()];
+		return `${day} (${weekday})`;
 	}
+
+    function getFullDate(dateString: string, offsetDays: number) {
+        const d = new Date(dateString);
+		d.setDate(d.getDate() + offsetDays);
+        return d.toLocaleDateString();
+    }
 
     // Square selection logic
     function handleMouseDown(d: number, t: number) {
@@ -123,19 +131,28 @@
 
     onMount(async () => {
         try {
-            // Fetch schedule details first
-            const scheduleData = await fetchJson<any>(`/api/groups/${$page.params.groupId || 'unknown'}/schedules`).then(list => list.find((s: any) => s.id === scheduleId));
-            if (scheduleData) {
-                schedule = {
-                    ...schedule,
-                    title: scheduleData.title,
-                    start: scheduleData.start
-                };
-            }
-
             // Fetch existing availability
             const myAvail = await fetchJson<any>(`/api/schedules/${scheduleId}/availability/me`);
-            if (myAvail && myAvail.blocks) {
+            
+            // We need the schedule start date to render the grid correctly
+            // Since we don't have groupId, we'll try to find it from user's groups
+            const userGroups = await fetchJson<any[]>('/api/groups');
+            let found = false;
+            for (const g of userGroups) {
+                const groupSchedules = await fetchJson<any[]>(`/api/groups/${g.id}/schedules`);
+                const s = groupSchedules.find((s: any) => s.id === scheduleId);
+                if (s) {
+                    schedule = {
+                        ...schedule,
+                        title: s.title,
+                        start: s.start
+                    };
+                    found = true;
+                    break;
+                }
+            }
+
+            if (myAvail && myAvail.blocks && schedule.start) {
                 const baseDate = new Date(schedule.start);
                 baseDate.setHours(0, 0, 0, 0);
 
@@ -207,7 +224,7 @@
                             <tbody>
                                 {#each Array(schedule.days) as _, d}
                                     <tr>
-                                        <th class="font-mono whitespace-nowrap px-2 py-2 text-xs opacity-60 text-right pr-4">{formatDateOffset(schedule.start, d)}</th>
+                                        <th class="font-mono whitespace-nowrap px-2 py-2 text-xs opacity-60 text-right pr-4" title={getFullDate(schedule.start, d)}>{formatDateOffset(schedule.start, d)}</th>
                                         {#each Array(24) as _, t}
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
@@ -215,7 +232,7 @@
                                                 {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
-                                                title="{formatDateOffset(schedule.start, d)} {t}:00"
+                                                title="{getFullDate(schedule.start, d)} {t}:00"
                                             >
                                                 <div class="w-full h-8"></div>
                                             </td>
@@ -233,7 +250,7 @@
                                 <tr>
                                     <th class="border-b border-base-300 w-8"></th>
                                     {#each Array(schedule.days) as _, d}
-                                        <th class="font-mono px-1 pb-2 text-xs opacity-60 whitespace-nowrap">{formatDateOffset(schedule.start, d)}</th>
+                                        <th class="font-mono px-1 pb-2 text-xs opacity-60 whitespace-nowrap" title={getFullDate(schedule.start, d)}>{formatDateOffset(schedule.start, d)}</th>
                                     {/each}
                                 </tr>
                             </thead>
@@ -248,7 +265,7 @@
                                                 {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
-                                                title="{formatDateOffset(schedule.start, d)} {t}:00"
+                                                title="{getFullDate(schedule.start, d)} {t}:00"
                                             >
                                                 <div class="w-full h-8 min-w-[3rem]"></div>
                                             </td>
@@ -272,14 +289,15 @@
 							    disabled={isSubmitting}
 							    onclick={handleSubmit}
 						    >
-							{#if isSubmitting}
-								<span class="loading loading-spinner"></span>
-							{/if}
-							Save Availability
-						</button>
-					</div>
-				</div>
-			</div>
-		</div>
+							    {#if isSubmitting}
+								    <span class="loading loading-spinner"></span>
+							    {/if}
+							    Save Availability
+						    </button>
+					    </div>
+				    </div>
+			    </div>
+		    </div>
+        </div>
 	</main>
 </div>
