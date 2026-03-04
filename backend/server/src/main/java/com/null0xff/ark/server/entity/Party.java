@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +13,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "parties")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Party {
 
     @Id
@@ -34,63 +41,18 @@ public class Party {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public Party() {
-        this.createdAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public ScheduleInstance getSchedule() {
-        return schedule;
-    }
 
-    public void setSchedule(ScheduleInstance schedule) {
-        this.schedule = schedule;
-    }
 
-    public String getTitle() {
-        return title;
-    }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
 
-    public String getRaidType() {
-        return raidType;
-    }
 
-    public void setRaidType(String raidType) {
-        this.raidType = raidType;
-    }
 
-    public Integer getMaxMembers() {
-        return maxMembers;
-    }
 
-    public void setMaxMembers(Integer maxMembers) {
-        this.maxMembers = maxMembers;
-    }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

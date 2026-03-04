@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,6 +15,9 @@ import java.util.UUID;
 @Table(name = "party_members", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"party_id", "user_id"})
 })
+@Getter
+@Setter
+@NoArgsConstructor
 public class PartyMember {
 
     @Id
@@ -28,39 +35,12 @@ public class PartyMember {
     @Column(name = "joined_at", updatable = false)
     private LocalDateTime joinedAt;
 
-    public PartyMember() {
-        this.joinedAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public Party getParty() {
-        return party;
-    }
 
-    public void setParty(Party party) {
-        this.party = party;
-    }
 
-    public User getUser() {
-        return user;
-    }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
 
-    public LocalDateTime getJoinedAt() {
-        return joinedAt;
-    }
 
-    public void setJoinedAt(LocalDateTime joinedAt) {
-        this.joinedAt = joinedAt;
-    }
 }

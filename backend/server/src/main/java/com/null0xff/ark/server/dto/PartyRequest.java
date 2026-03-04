@@ -1,11 +1,18 @@
 package com.null0xff.ark.server.dto;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 
 /**
  * Request payload to create a new party.
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class PartyRequest {
 
     @Schema(description = "Title of the party")
@@ -20,35 +27,11 @@ public class PartyRequest {
     @Schema(description = "Exact start time of the party")
     private LocalDateTime startTime;
 
-    public String getTitle() {
-        return title;
-    }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
 
-    public String getRaidType() {
-        return raidType;
-    }
 
-    public void setRaidType(String raidType) {
-        this.raidType = raidType;
-    }
 
-    public Integer getMaxMembers() {
-        return maxMembers;
-    }
 
-    public void setMaxMembers(Integer maxMembers) {
-        this.maxMembers = maxMembers;
-    }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
-    }
 }

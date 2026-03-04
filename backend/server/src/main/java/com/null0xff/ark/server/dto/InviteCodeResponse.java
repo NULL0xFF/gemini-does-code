@@ -1,11 +1,12 @@
 package com.null0xff.ark.server.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
-/**
- * Response payload representing an active invite code.
- */
+@Data
+@NoArgsConstructor
 @Schema(description = "Response payload representing an invite code")
 public class InviteCodeResponse {
 
@@ -26,37 +27,5 @@ public class InviteCodeResponse {
         this.max = max;
         this.used = used;
         this.expires = expiresAt != null ? expiresAt.toLocalDate().toString() : null;
-    }
-
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public Integer getMax() {
-        return max;
-    }
-
-    public void setMax(Integer max) {
-        this.max = max;
-    }
-
-    public Integer getUsed() {
-        return used;
-    }
-
-    public void setUsed(Integer used) {
-        this.used = used;
-    }
-
-    public String getExpires() {
-        return expires;
-    }
-
-    public void setExpires(String expires) {
-        this.expires = expires;
     }
 }

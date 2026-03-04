@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -15,6 +19,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
 public class User {
 
     @Id
@@ -40,71 +47,23 @@ public class User {
     @Column(name = "last_issued_at")
     private java.time.Instant lastIssuedAt;
 
-    public User() {
-        this.createdAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public String getDiscordId() {
-        return discordId;
-    }
 
-    public void setDiscordId(String discordId) {
-        this.discordId = discordId;
-    }
 
-    public String getUsername() {
-        return username;
-    }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
 
-    public String getNickname() {
-        return nickname;
-    }
 
-    public void setNickname(String nickname) {
-        this.nickname = nickname;
-    }
 
-    public String getAvatar() {
-        return avatar;
-    }
 
-    public void setAvatar(String avatar) {
-        this.avatar = avatar;
-    }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 
-    public LocalDateTime getLastLogin() {
-        return lastLogin;
-    }
 
-    public void setLastLogin(LocalDateTime lastLogin) {
-        this.lastLogin = lastLogin;
-    }
 
     public java.time.Instant getLastIssuedAt() {
         return lastIssuedAt;
     }
 
-    public void setLastIssuedAt(java.time.Instant lastIssuedAt) {
-        this.lastIssuedAt = lastIssuedAt;
-    }
 }

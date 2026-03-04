@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +13,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "groups")
+@Getter
+@Setter
+@NoArgsConstructor
 public class Group {
 
     @Id
@@ -24,39 +31,12 @@ public class Group {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public Group() {
-        this.createdAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public String getName() {
-        return name;
-    }
 
-    public void setName(String name) {
-        this.name = name;
-    }
 
-    public String getDescription() {
-        return description;
-    }
 
-    public void setDescription(String description) {
-        this.description = description;
-    }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

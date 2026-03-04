@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -9,6 +13,9 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "invite_codes")
+@Getter
+@Setter
+@NoArgsConstructor
 public class InviteCode {
 
     @Id
@@ -38,71 +45,20 @@ public class InviteCode {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public InviteCode() {
-        this.createdAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public String getCode() {
-        return code;
-    }
 
-    public void setCode(String code) {
-        this.code = code;
-    }
 
-    public Group getGroup() {
-        return group;
-    }
 
-    public void setGroup(Group group) {
-        this.group = group;
-    }
 
-    public User getCreatedBy() {
-        return createdBy;
-    }
 
-    public void setCreatedBy(User createdBy) {
-        this.createdBy = createdBy;
-    }
 
-    public Integer getMaxUsage() {
-        return maxUsage;
-    }
 
-    public void setMaxUsage(Integer maxUsage) {
-        this.maxUsage = maxUsage;
-    }
 
-    public Integer getCurrentUsage() {
-        return currentUsage;
-    }
 
-    public void setCurrentUsage(Integer currentUsage) {
-        this.currentUsage = currentUsage;
-    }
 
-    public LocalDateTime getExpiresAt() {
-        return expiresAt;
-    }
 
-    public void setExpiresAt(LocalDateTime expiresAt) {
-        this.expiresAt = expiresAt;
-    }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

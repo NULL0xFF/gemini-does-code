@@ -1,5 +1,9 @@
 package com.null0xff.ark.server.entity;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+
 import com.null0xff.ark.server.enums.GroupRole;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -13,6 +17,9 @@ import java.util.UUID;
 @Table(name = "group_members", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"group_id", "user_id"})
 })
+@Getter
+@Setter
+@NoArgsConstructor
 public class GroupMember {
 
     @Id
@@ -34,47 +41,14 @@ public class GroupMember {
     @Column(name = "joined_at", updatable = false)
     private LocalDateTime joinedAt;
 
-    public GroupMember() {
-        this.joinedAt = LocalDateTime.now();
-    }
 
-    public UUID getId() {
-        return id;
-    }
 
-    public void setId(UUID id) {
-        this.id = id;
-    }
 
-    public Group getGroup() {
-        return group;
-    }
 
-    public void setGroup(Group group) {
-        this.group = group;
-    }
 
-    public User getUser() {
-        return user;
-    }
 
-    public void setUser(User user) {
-        this.user = user;
-    }
 
-    public GroupRole getRole() {
-        return role;
-    }
 
-    public void setRole(GroupRole role) {
-        this.role = role;
-    }
 
-    public LocalDateTime getJoinedAt() {
-        return joinedAt;
-    }
 
-    public void setJoinedAt(LocalDateTime joinedAt) {
-        this.joinedAt = joinedAt;
-    }
 }
