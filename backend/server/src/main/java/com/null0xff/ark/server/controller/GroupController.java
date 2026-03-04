@@ -1,8 +1,8 @@
 package com.null0xff.ark.server.controller;
 
-import com.null0xff.ark.server.dto.GroupRequest;
-import com.null0xff.ark.server.dto.GroupResponse;
+import com.null0xff.ark.server.dto.*;
 import com.null0xff.ark.server.entity.Group;
+import com.null0xff.ark.server.service.GroupService;
 import com.null0xff.ark.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,9 +24,11 @@ import java.util.UUID;
 public class GroupController {
 
     private final UserService userService;
+    private final GroupService groupService;
 
-    public GroupController(UserService userService) {
+    public GroupController(UserService userService, GroupService groupService) {
         this.userService = userService;
+        this.groupService = groupService;
     }
 
     /**
@@ -64,5 +66,49 @@ public class GroupController {
                 group.getName(),
                 group.getDescription()
         ));
+    }
+
+    @Operation(summary = "Get Group Details", description = "Retrieves details of a specific group.")
+    @GetMapping("/{groupId}")
+    public ResponseEntity<GroupResponse> getGroupDetails(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.getGroupDetails(groupId, userId));
+    }
+
+    @Operation(summary = "Get Group Members", description = "Retrieves the roster for a specific group.")
+    @GetMapping("/{groupId}/members")
+    public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.getGroupMembers(groupId, userId));
+    }
+
+    @Operation(summary = "Generate Invite Code", description = "Generates a new invite code for the group (MANAGER only).")
+    @PostMapping("/{groupId}/invites")
+    public ResponseEntity<InviteCodeResponse> generateInviteCode(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @RequestBody InviteCodeRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.generateInviteCode(groupId, userId, request.getMaxUsage(), request.getExpirationDays()));
+    }
+
+    @Operation(summary = "List Active Invites", description = "Retrieves all active invite codes for the group (MANAGER only).")
+    @GetMapping("/{groupId}/invites")
+    public ResponseEntity<List<InviteCodeResponse>> getActiveInviteCodes(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.getActiveInviteCodes(groupId, userId));
+    }
+
+    @Operation(summary = "Revoke Invite Code", description = "Revokes a specific invite code (MANAGER only).")
+    @DeleteMapping("/{groupId}/invites/{code}")
+    public ResponseEntity<Void> revokeInviteCode(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @PathVariable String code) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.revokeInviteCode(groupId, userId, code);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Join Group", description = "Joins a group using an active invite code.")
+    @PostMapping("/join")
+    public ResponseEntity<Void> joinGroup(@AuthenticationPrincipal Jwt jwt, @RequestBody JoinGroupRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.joinGroup(userId, request.getCode());
+        return ResponseEntity.ok().build();
     }
 }
