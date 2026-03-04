@@ -44,8 +44,23 @@
         return d.toLocaleDateString();
     }
 
+    // Helper to check if a cell is outside the schedule's absolute range
+    function isCellDisabled(d: number, t: number) {
+        if (!schedule.start || !schedule.end) return false;
+        
+        const baseDate = new Date(schedule.start);
+        baseDate.setHours(0, 0, 0, 0);
+        
+        const cellTime = baseDate.getTime() + (d * 24 + t) * 60 * 60 * 1000;
+        const startTime = new Date(schedule.start).getTime();
+        const endTime = new Date(schedule.end).getTime();
+        
+        return cellTime < startTime || cellTime >= endTime;
+    }
+
     // Square selection logic
     function handleMouseDown(d: number, t: number) {
+        if (isCellDisabled(d, t)) return;
         isDragging = true;
         dragState = !selectedCells[d][t];
 		dragStart = { d, t };
@@ -68,7 +83,9 @@
 			// Apply the selection to the grid
 			for (let d = minD; d <= maxD; d++) {
 				for (let t = minT; t <= maxT; t++) {
-					selectedCells[d][t] = dragState;
+                    if (!isCellDisabled(d, t)) {
+					    selectedCells[d][t] = dragState;
+                    }
 				}
 			}
 			selectedCells = [...selectedCells];
@@ -81,7 +98,7 @@
 
 	// Helper to determine if a cell is currently inside the visual drag preview box
 	function isInDragBox(d: number, t: number) {
-		if (!isDragging || !dragStart || !dragCurrent) return false;
+		if (!isDragging || !dragStart || !dragCurrent || isCellDisabled(d, t)) return false;
 		const minD = Math.min(dragStart.d, dragCurrent.d);
 		const maxD = Math.max(dragStart.d, dragCurrent.d);
 		const minT = Math.min(dragStart.t, dragCurrent.t);
@@ -224,13 +241,13 @@
                                         {#each Array(24) as _, t}
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
-                                                class="border border-base-300 transition-colors cursor-crosshair p-0 
-                                                {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
+                                                class="border border-base-300 transition-colors p-0 
+                                                {isCellDisabled(d, t) ? 'bg-base-200 cursor-not-allowed opacity-50' : 'cursor-crosshair ' + (isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300'))}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
-                                                title="{getFullDate(schedule.start, d)} {t}:00"
+                                                title={isCellDisabled(d, t) ? 'Outside schedule range' : `${formatDateOffset(schedule.start, d)} ${t}:00`}
                                             >
-                                                <div class="w-full h-8"></div>
+                                                <div class="w-full h-8 min-w-[2.5rem]"></div>
                                             </td>
                                         {/each}
                                     </tr>
@@ -257,11 +274,11 @@
                                         {#each Array(schedule.days) as _, d}
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
-                                                class="border border-base-300 transition-colors cursor-crosshair p-0 
-                                                {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
+                                                class="border border-base-300 transition-colors p-0 
+                                                {isCellDisabled(d, t) ? 'bg-base-200 cursor-not-allowed opacity-50' : 'cursor-crosshair ' + (isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300'))}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
-                                                title="{formatDateOffset(schedule.start, d)} {t}:00"
+                                                title={isCellDisabled(d, t) ? 'Outside schedule range' : `${formatDateOffset(schedule.start, d)} ${t}:00`}
                                             >
                                                 <div class="w-full h-8 min-w-[3rem]"></div>
                                             </td>
