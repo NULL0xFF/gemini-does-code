@@ -4,6 +4,7 @@ import com.null0xff.ark.server.dto.*;
 import com.null0xff.ark.server.entity.*;
 import com.null0xff.ark.server.enums.GroupRole;
 import com.null0xff.ark.server.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,7 @@ import java.util.stream.Collectors;
  * Service for managing groups, rosters, and invitations.
  */
 @Service
+@RequiredArgsConstructor
 public class GroupService {
 
     private final GroupRepository groupRepository;
@@ -24,14 +26,6 @@ public class GroupService {
     private final InviteCodeRepository inviteCodeRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
-
-    public GroupService(GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, InviteCodeRepository inviteCodeRepository, UserRepository userRepository, ScheduleRepository scheduleRepository) {
-        this.groupRepository = groupRepository;
-        this.groupMemberRepository = groupMemberRepository;
-        this.inviteCodeRepository = inviteCodeRepository;
-        this.userRepository = userRepository;
-        this.scheduleRepository = scheduleRepository;
-    }
 
     public GroupResponse getGroupDetails(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)

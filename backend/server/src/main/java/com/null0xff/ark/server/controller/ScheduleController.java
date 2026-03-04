@@ -9,6 +9,7 @@ import com.null0xff.ark.server.service.AvailabilityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -21,17 +22,13 @@ import java.util.UUID;
  * Controller for managing schedule availability and schedule-related parties.
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/schedules")
 @Tag(name = "Schedules & Availability", description = "Endpoints for managing time blocks, heatmaps, and schedule parties")
 public class ScheduleController {
 
     private final AvailabilityService availabilityService;
     private final PartyService partyService;
-
-    public ScheduleController(AvailabilityService availabilityService, PartyService partyService) {
-        this.availabilityService = availabilityService;
-        this.partyService = partyService;
-    }
 
     @Operation(summary = "Update My Availability", description = "Overwrites the current user's availability for a schedule.")
     @ApiResponse(responseCode = "200", description = "Availability updated successfully")

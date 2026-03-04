@@ -3,6 +3,7 @@ package com.null0xff.ark.server;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.pf4j.spring.SpringPluginManager;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,14 +17,11 @@ import java.util.Map;
  * Controller for testing server status and plugin system functionality.
  */
 @RestController
+@RequiredArgsConstructor
 @Tag(name = "System Status", description = "Endpoints for checking server health and plugin integration")
 public class HelloController {
 
     private final SpringPluginManager pluginManager;
-
-    public HelloController(SpringPluginManager pluginManager) {
-        this.pluginManager = pluginManager;
-    }
 
     /**
      * Basic hello endpoint that aggregates greetings from active PF4J plugins.

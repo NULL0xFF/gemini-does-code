@@ -13,6 +13,7 @@ import com.null0xff.ark.server.repository.PartyMemberRepository;
 import com.null0xff.ark.server.repository.PartyRepository;
 import com.null0xff.ark.server.repository.ScheduleRepository;
 import com.null0xff.ark.server.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * Service for managing raid parties within schedules.
  */
 @Service
+@RequiredArgsConstructor
 public class PartyService {
 
     private final PartyRepository partyRepository;
@@ -32,14 +34,6 @@ public class PartyService {
     private final ScheduleRepository scheduleRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
-
-    public PartyService(PartyRepository partyRepository, PartyMemberRepository partyMemberRepository, ScheduleRepository scheduleRepository, GroupMemberRepository groupMemberRepository, UserRepository userRepository) {
-        this.partyRepository = partyRepository;
-        this.partyMemberRepository = partyMemberRepository;
-        this.scheduleRepository = scheduleRepository;
-        this.groupMemberRepository = groupMemberRepository;
-        this.userRepository = userRepository;
-    }
 
     @Transactional
     public PartyResponse createParty(UUID scheduleId, UUID managerId, PartyRequest request) {

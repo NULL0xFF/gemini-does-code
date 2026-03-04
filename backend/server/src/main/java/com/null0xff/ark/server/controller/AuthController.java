@@ -6,6 +6,7 @@ import com.null0xff.ark.server.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import java.util.UUID;
  * Provides endpoints for Discord OAuth2 login flow and token refreshing.
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Endpoints for managing user authentication and JWT tokens")
 public class AuthController {
@@ -36,10 +38,6 @@ public class AuthController {
 
     @Value("${app.oauth2.discord.redirect-uri}")
     private String redirectUri;
-
-    public AuthController(AuthService authService) {
-        this.authService = authService;
-    }
 
     /**
      * Refreshes the current user's JWT token.

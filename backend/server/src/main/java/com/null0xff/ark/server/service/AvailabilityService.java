@@ -10,6 +10,7 @@ import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.MemberAvailabilityRepository;
 import com.null0xff.ark.server.repository.ScheduleRepository;
 import com.null0xff.ark.server.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,19 +23,13 @@ import java.util.stream.Collectors;
  * Service for managing member availability and aggregated heatmaps.
  */
 @Service
+@RequiredArgsConstructor
 public class AvailabilityService {
 
     private final MemberAvailabilityRepository availabilityRepository;
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
-
-    public AvailabilityService(MemberAvailabilityRepository availabilityRepository, ScheduleRepository scheduleRepository, UserRepository userRepository, GroupMemberRepository groupMemberRepository) {
-        this.availabilityRepository = availabilityRepository;
-        this.scheduleRepository = scheduleRepository;
-        this.userRepository = userRepository;
-        this.groupMemberRepository = groupMemberRepository;
-    }
 
     @Transactional
     public void updateAvailability(UUID scheduleId, UUID userId, List<AvailabilityBlock> blocks) {

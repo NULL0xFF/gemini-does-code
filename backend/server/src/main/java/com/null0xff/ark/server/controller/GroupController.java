@@ -7,6 +7,7 @@ import com.null0xff.ark.server.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -19,17 +20,13 @@ import java.util.UUID;
  * Controller for managing groups and memberships.
  */
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/groups")
 @Tag(name = "Groups", description = "Endpoints for managing group collectives and memberships")
 public class GroupController {
 
     private final UserService userService;
     private final GroupService groupService;
-
-    public GroupController(UserService userService, GroupService groupService) {
-        this.userService = userService;
-        this.groupService = groupService;
-    }
 
     /**
      * Retrieves all groups that the currently authenticated user belongs to.

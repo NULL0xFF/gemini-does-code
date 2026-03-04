@@ -1,18 +1,16 @@
 package com.null0xff.ark.server.service;
 
-import com.null0xff.ark.server.entity.User;
-import com.null0xff.ark.server.repository.UserRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
-
 import com.null0xff.ark.server.dto.GroupResponse;
 import com.null0xff.ark.server.entity.Group;
 import com.null0xff.ark.server.entity.GroupMember;
+import com.null0xff.ark.server.entity.User;
 import com.null0xff.ark.server.enums.GroupRole;
 import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.GroupRepository;
+import com.null0xff.ark.server.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,17 +20,12 @@ import java.util.stream.Collectors;
  * Service for managing user profile information and account lifecycle.
  */
 @Service
+@RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
-
-    public UserService(UserRepository userRepository, GroupRepository groupRepository, GroupMemberRepository groupMemberRepository) {
-        this.userRepository = userRepository;
-        this.groupRepository = groupRepository;
-        this.groupMemberRepository = groupMemberRepository;
-    }
 
     /**
      * Retrieves all groups that the specified user is a member of.
