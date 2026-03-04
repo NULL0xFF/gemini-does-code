@@ -169,6 +169,21 @@
         }
     }
 
+    async function togglePartyStatus(party: any) {
+        try {
+            const newStatus = party.status !== 'Done';
+            await fetchApi(`/api/parties/${party.id}/complete`, { 
+                method: 'PATCH',
+                body: JSON.stringify({ completed: newStatus })
+            });
+            await fetchParties(party.scheduleId);
+            toast.success(newStatus ? 'Party marked as Done.' : 'Party marked as Planned.');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update party status.');
+        }
+    }
+
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
 		d.setDate(d.getDate() + offsetDays);
@@ -484,12 +499,13 @@
                                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
                                                                         </label>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                                        <ul tabindex="0" class="dropdown-content z-[30] menu p-2 shadow bg-base-100 rounded-box w-24 border border-base-200">
+                                                                        <ul tabindex="0" class="dropdown-content z-[30] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                                            <li><button class="text-xs" onclick={() => togglePartyStatus(party)}>{party.status === 'Done' ? 'Mark Planned' : 'Mark Done'}</button></li>
                                                                             <li><button class="text-xs text-error" onclick={() => requestDeleteParty(party)}>Delete</button></li>
                                                                         </ul>
                                                                     </div>
                                                                 {/if}
-																<span class="badge badge-sm badge-outline hidden sm:flex">{party.status}</span>
+																<span class="badge badge-sm badge-outline hidden sm:flex {party.status === 'Done' ? 'badge-success text-white' : ''}">{party.status}</span>
 																<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
 															</div>
 														</div>
@@ -501,10 +517,12 @@
 																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
 																		<p class="font-mono text-base">{new Date(party.start).toLocaleString()}</p>
 																	</div>
-																	{#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
-																		<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
-																	{:else}
-																		<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
+																	{#if party.status !== 'Done'}
+																		{#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
+																			<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
+																		{:else}
+																			<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
+																		{/if}
 																	{/if}
 																</div>
 																
