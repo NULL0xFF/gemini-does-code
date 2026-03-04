@@ -235,4 +235,14 @@ public class GroupService {
                 .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime()))
                 .collect(Collectors.toList());
     }
+
+    public ScheduleResponse getSchedule(UUID scheduleId, UUID userId) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
+    }
 }

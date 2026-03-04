@@ -2,6 +2,8 @@ package com.null0xff.ark.server.controller;
 
 import com.null0xff.ark.server.dto.PartyRequest;
 import com.null0xff.ark.server.dto.PartyResponse;
+import com.null0xff.ark.server.dto.ScheduleResponse;
+import com.null0xff.ark.server.service.GroupService;
 import com.null0xff.ark.server.service.PartyService;
 import com.null0xff.ark.server.dto.AvailabilityRequest;
 import com.null0xff.ark.server.dto.AvailabilityResponse;
@@ -29,6 +31,7 @@ public class ScheduleController {
 
     private final AvailabilityService availabilityService;
     private final PartyService partyService;
+    private final GroupService groupService;
 
     @Operation(summary = "Update My Availability", description = "Overwrites the current user's availability for a schedule.")
     @ApiResponse(responseCode = "200", description = "Availability updated successfully")
@@ -37,6 +40,13 @@ public class ScheduleController {
         UUID userId = UUID.fromString(jwt.getSubject());
         availabilityService.updateAvailability(scheduleId, userId, request.getBlocks());
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get Schedule Details", description = "Retrieves details of a specific schedule by its ID.")
+    @GetMapping("/{scheduleId}")
+    public ResponseEntity<ScheduleResponse> getSchedule(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID scheduleId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.getSchedule(scheduleId, userId));
     }
 
     @Operation(summary = "Get Aggregated Availability", description = "Retrieves all availability blocks for all members in a schedule.")
