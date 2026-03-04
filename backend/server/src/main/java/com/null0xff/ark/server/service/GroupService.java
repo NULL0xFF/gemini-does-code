@@ -51,6 +51,18 @@ public class GroupService {
         groupRepository.save(group);
     }
 
+    @Transactional
+    public void deleteGroup(UUID groupId, UUID managerId) {
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new RuntimeException("Only managers can delete the group");
+        }
+
+        groupRepository.delete(manager.getGroup());
+    }
+
     public List<GroupMemberResponse> getGroupMembers(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));

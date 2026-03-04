@@ -80,6 +80,15 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Delete Group", description = "Permanently deletes the group and all associated data (MANAGER only).")
+    @ApiResponse(responseCode = "200", description = "Group deleted successfully")
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.deleteGroup(groupId, userId);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Get Group Members", description = "Retrieves the roster for a specific group.")
     @GetMapping("/{groupId}/members")
     public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
