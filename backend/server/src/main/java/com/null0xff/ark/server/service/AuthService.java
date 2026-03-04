@@ -14,7 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import java.util.Map;
 import java.util.UUID;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Service responsible for handling authentication flows, including interacting with
@@ -70,7 +70,7 @@ public class AuthService {
     public String refreshToken(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found during token refresh"));
-        user.setLastLogin(LocalDateTime.now());
+        user.setLastLogin(Instant.now());
         String newToken = jwtTokenService.generateToken(user);
         user.setLastIssuedAt(jwtTokenService.extractIat(newToken));
         userRepository.save(user);
@@ -123,7 +123,7 @@ public class AuthService {
         user.setDiscordId(discordId);
         user.setUsername(username);
         user.setAvatar(avatar);
-        user.setLastLogin(LocalDateTime.now());
+        user.setLastLogin(Instant.now());
         
         return userRepository.save(user);
     }

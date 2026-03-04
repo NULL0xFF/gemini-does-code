@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * A block of time indicating availability.
@@ -16,10 +16,10 @@ import java.time.LocalDateTime;
 public class AvailabilityBlock {
 
     @Schema(description = "Start time of availability block")
-    private LocalDateTime start;
+    private Instant start;
 
     @Schema(description = "End time of availability block")
-    private LocalDateTime end;
+    private Instant end;
 
 
 

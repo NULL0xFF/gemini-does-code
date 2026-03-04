@@ -5,7 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Request payload to create a new party.
@@ -25,7 +25,7 @@ public class PartyRequest {
     private Integer maxMembers;
 
     @Schema(description = "Exact start time of the party")
-    private LocalDateTime startTime;
+    private Instant startTime;
 
 
 

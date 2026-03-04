@@ -8,7 +8,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -37,7 +37,7 @@ public class PartyMember {
     private User user;
 
     @Column(name = "joined_at", updatable = false)
-    private LocalDateTime joinedAt;
+    private Instant joinedAt;
 
 
 

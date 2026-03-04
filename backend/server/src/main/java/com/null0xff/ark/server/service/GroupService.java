@@ -8,7 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -94,7 +95,7 @@ public class GroupService {
         code.setGroup(manager.getGroup());
         code.setCreatedBy(manager.getUser());
         code.setMaxUsage(maxUsage);
-        code.setExpiresAt(LocalDateTime.now().plusDays(expirationDays));
+        code.setExpiresAt(Instant.now().plus(expirationDays, ChronoUnit.DAYS));
 
         inviteCodeRepository.save(code);
 
@@ -110,7 +111,7 @@ public class GroupService {
         }
 
         return inviteCodeRepository.findByGroupId(groupId).stream()
-                .filter(code -> code.getExpiresAt().isAfter(LocalDateTime.now()) && (code.getMaxUsage() == null || code.getCurrentUsage() < code.getMaxUsage()))
+                .filter(code -> code.getExpiresAt().isAfter(Instant.now()) && (code.getMaxUsage() == null || code.getCurrentUsage() < code.getMaxUsage()))
                 .map(code -> new InviteCodeResponse(code.getCode(), code.getMaxUsage(), code.getCurrentUsage(), code.getExpiresAt()))
                 .collect(Collectors.toList());
     }
@@ -142,7 +143,7 @@ public class GroupService {
         InviteCode code = inviteCodeRepository.findByCode(codeStr)
                 .orElseThrow(() -> new RuntimeException("Invalid or expired invite code"));
 
-        if (code.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (code.getExpiresAt().isBefore(Instant.now())) {
             throw new RuntimeException("Invite code has expired");
         }
 
@@ -166,7 +167,7 @@ public class GroupService {
     }
 
     @Transactional
-    public ScheduleResponse createSchedule(UUID groupId, UUID managerId, String title, LocalDateTime start, LocalDateTime end) {
+    public ScheduleResponse createSchedule(UUID groupId, UUID managerId, String title, Instant start, Instant end) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
 
@@ -190,7 +191,7 @@ public class GroupService {
     }
 
     @Transactional
-    public void updateSchedule(UUID scheduleId, UUID managerId, String title, LocalDateTime start, LocalDateTime end) {
+    public void updateSchedule(UUID scheduleId, UUID managerId, String title, Instant start, Instant end) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new RuntimeException("Schedule not found"));
 
