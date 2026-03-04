@@ -40,4 +40,13 @@ public class PartyController {
         partyService.leaveParty(partyId, userId);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "Delete Party", description = "Permanently deletes a raid party (MANAGER only).")
+    @ApiResponse(responseCode = "200", description = "Party deleted successfully")
+    @DeleteMapping("/{partyId}")
+    public ResponseEntity<Void> deleteParty(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID partyId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        partyService.deleteParty(partyId, userId);
+        return ResponseEntity.ok().build();
+    }
 }

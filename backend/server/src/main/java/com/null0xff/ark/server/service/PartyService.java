@@ -115,4 +115,19 @@ public class PartyService {
         
         partyMemberRepository.delete(member);
     }
+
+    @Transactional
+    public void deleteParty(UUID partyId, UUID managerId) {
+        Party party = partyRepository.findById(partyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
+
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), managerId)
+                .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new ForbiddenException("Only managers can delete parties", partyId);
+        }
+
+        partyRepository.delete(party);
+    }
 }
