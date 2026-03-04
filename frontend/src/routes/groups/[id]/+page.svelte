@@ -32,6 +32,14 @@
 		openHeatmapId = openHeatmapId === id ? null : id;
 	}
 
+	function formatDateOffset(dateString: string, offsetDays: number) {
+		const d = new Date(dateString);
+		d.setDate(d.getDate() + offsetDays);
+		const month = String(d.getMonth() + 1).padStart(2, '0');
+		const day = String(d.getDate()).padStart(2, '0');
+		return `${month}-${day}`;
+	}
+
 	function logout() {
 		localStorage.removeItem('ark_token');
 		window.location.href = `${base}/`;
@@ -157,19 +165,19 @@
 												<table class="table table-xs w-full text-center border-separate border-spacing-0">
 													<thead>
 														<tr>
-															<th class="border border-base-300 sticky left-0 bg-base-200">Date \ Time</th>
+															<th class="border border-base-300 sticky left-0 bg-base-200 w-12"></th>
 															{#each Array(24) as _, i}
-																<th class="font-mono px-1 border border-base-300">{i.toString().padStart(2, '0')}</th>
+																<th class="font-mono px-0 border border-base-300 text-[10px] w-5">{i}</th>
 															{/each}
 														</tr>
 													</thead>
 													<tbody>
 														{#each Array(8) as _, d}
 															<tr>
-																<th class="font-mono whitespace-nowrap px-2 py-1 border border-base-300 sticky left-0 bg-base-200">Day {d + 1}</th>
+																<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px]">{formatDateOffset(schedule.start, d)}</th>
 																{#each Array(24) as _, t}
-																	<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="Day {d + 1}, {t}:00">
-																		<div class="w-6 h-6 mx-auto"></div>
+																	<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
+																		<div class="w-full h-4"></div>
 																	</td>
 																{/each}
 															</tr>
