@@ -130,8 +130,8 @@
 						</div>
 						{#if isManager}
 							<div class="flex gap-2">
-								<button class="btn btn-primary">Invite Members</button>
-								<button class="btn btn-outline">Settings</button>
+								<a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
+								<a href="{base}/groups/{groupId}/invites" class="btn btn-outline">Settings</a>
 							</div>
 						{/if}
 					</div>

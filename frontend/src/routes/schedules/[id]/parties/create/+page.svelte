@@ -87,21 +87,21 @@
                 </div>
 			</div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1">
-                    <div class="card bg-base-100 shadow-xl border-t-4 border-info sticky top-24">
-                        <div class="card-body">
-                            <h3 class="card-title text-ubuntu">Heatmap Reference</h3>
-                            <p class="text-sm opacity-70 mb-4">Use the aggregated availability to pick the best start time for this party.</p>
-                            
-                            <div class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center border border-dashed border-base-300">
-                                <span class="opacity-50 text-sm italic">(Heatmap visual placeholder)</span>
-                            </div>
+            <div class="space-y-8">
+                <!-- Heatmap Reference (Full Width) -->
+                <div class="card bg-base-100 shadow-xl border-t-4 border-info">
+                    <div class="card-body">
+                        <h3 class="card-title text-ubuntu">Heatmap Reference</h3>
+                        <p class="text-sm opacity-70 mb-4">Use the aggregated availability to pick the best start time for this party.</p>
+                        
+                        <div class="w-full h-48 bg-base-200 rounded-lg flex items-center justify-center border border-dashed border-base-300">
+                            <span class="opacity-50 text-sm italic">(Heatmap visual placeholder)</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 card bg-base-100 shadow-xl">
+                <!-- Creation Form -->
+                <div class="card bg-base-100 shadow-xl">
                     <div class="card-body">
                         <div class="space-y-6">
                             <div>
