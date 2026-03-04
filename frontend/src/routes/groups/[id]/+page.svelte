@@ -23,6 +23,8 @@
 	let expandedPartyId = $state<string | null>(null);
 	let parties = $state<any[]>([]);
 	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
+    let rawAvailability = $state<any[]>([]);
+    let selectedCell = $state<{d: number, t: number, members: string[]} | null>(null);
 
 	async function fetchData() {
 	        try {
@@ -63,12 +65,11 @@
     async function fetchHeatmap(scheduleId: string, startDate: string) {
         try {
             const data = await fetchJson<any[]>(`/api/schedules/${scheduleId}/availability`);
+            rawAvailability = data;
             
             // Initialize 8x24 grid with zeros
             const grid = Array(8).fill(0).map(() => Array(24).fill(0));
             
-            // Create a base date object for the "start of day" in user's LOCAL timezone
-            // based on the schedule's absolute start time.
             const scheduleStartAbs = new Date(startDate);
             const baseDate = new Date(scheduleStartAbs);
             baseDate.setHours(0, 0, 0, 0);
@@ -76,11 +77,8 @@
             data.forEach(userAvail => {
                 userAvail.blocks.forEach((block: any) => {
                     const blockDate = new Date(block.start);
-                    
-                    // Difference in milliseconds from the grid's local midnight base
                     const diffMs = blockDate.getTime() - baseDate.getTime();
                     const diffHoursTotal = Math.floor(diffMs / (1000 * 60 * 60));
-                    
                     const dayDiff = Math.floor(diffHoursTotal / 24);
                     const hour = diffHoursTotal % 24;
 
@@ -101,6 +99,7 @@
             await fetchHeatmap(id, startDate);
         }
         openHeatmapId = openHeatmapId === id ? null : id;
+        selectedCell = null;
 	}
 
     async function renameSchedule(scheduleId: string, oldTitle: string) {
@@ -140,7 +139,6 @@
 
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
-        // Add offset to the absolute date, then format in local timezone
 		d.setDate(d.getDate() + offsetDays);
 		const day = String(d.getDate()).padStart(2, '0');
         const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
@@ -156,12 +154,30 @@
 
     function getHeatmapClass(count: number) {
         if (!count) return 'bg-base-100';
-        const total = members.length;
+        const total = Math.max(members.length, 1);
         const ratio = count / total;
         if (ratio >= 0.8) return 'bg-success text-success-content';
         if (ratio >= 0.5) return 'bg-primary text-primary-content';
         if (ratio >= 0.2) return 'bg-info text-info-content';
         return 'bg-warning text-warning-content';
+    }
+
+    function handleCellClick(d: number, t: number, scheduleStart: string) {
+        if (!scheduleStart) return;
+        const baseDate = new Date(scheduleStart);
+        baseDate.setHours(0, 0, 0, 0);
+        const targetTime = baseDate.getTime() + (d * 24 + t) * 60 * 60 * 1000;
+
+        const availMembers = rawAvailability
+            .filter(userAvail => 
+                userAvail.blocks.some((b: any) => new Date(b.start).getTime() === targetTime)
+            )
+            .map(ua => {
+                const m = members.find(m => m.id === ua.userId);
+                return m ? (m.nickname || m.username) : 'Unknown';
+            });
+
+        selectedCell = { d, t, members: availMembers };
     }
 
 	async function toggleParty(id: string, scheduleId: string) {
@@ -178,7 +194,6 @@
             toast.success('Joined the party!');
 		} catch (err) {
 			console.error(err);
-            // State conflict (already joined/full), refresh data
             await fetchParties(scheduleId);
             toast.error('Failed to join. Syncing latest data...');
 		}
@@ -253,12 +268,12 @@
 								<p class="opacity-80 font-neo">{group.description}</p>
 							{/if}
 						</div>
-						{#if isManager}
-							<div class="flex gap-2">
-								<a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
-								<a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold">Settings</a>
-							</div>
-						{/if}
+                        <div class="flex gap-2">
+                            {#if isManager}
+                                <a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
+                            {/if}
+                            <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold">Settings</a>
+                        </div>
 					</div>
 				</div>
 
@@ -316,8 +331,8 @@
 										<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</a>
 
 										{#if openHeatmapId === schedule.id && heatmapData}
-											<div class="mt-4 bg-base-200 p-2 rounded-lg">
-												<div class="hidden md:block overflow-x-auto">
+											<div class="mt-4 relative bg-base-200 rounded-lg overflow-hidden border border-base-300">
+												<div class="hidden md:block overflow-x-auto p-2">
 													<table class="table table-xs w-full text-center border-collapse">
 														<thead>
 															<tr>
@@ -332,7 +347,11 @@
 																<tr>
 																	<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10" title={getFullDate(schedule.start, d)}>{formatDateOffset(schedule.start, d)}</th>
 																	{#each Array(24) as _, t}
-																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{getFullDate(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																		<td 
+                                                                            class="border border-base-300 transition-colors p-0 cursor-pointer {getHeatmapClass(heatmapData[d][t])}" 
+                                                                            title="{getFullDate(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}"
+                                                                            onclick={() => handleCellClick(d, t, schedule.start)}
+                                                                        >
 																			<div class="w-full h-4 text-[8px] flex items-center justify-center font-bold">
                                                                                 {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
                                                                             </div>
@@ -344,7 +363,7 @@
 													</table>
 												</div>
 
-												<div class="md:hidden overflow-x-auto">
+												<div class="md:hidden overflow-x-auto p-2">
 													<table class="table table-xs w-full text-center border-collapse">
 														<thead>
 															<tr>
@@ -359,7 +378,11 @@
 																<tr>
 																	<th class="font-mono px-0 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{t}</th>
 																	{#each Array(8) as _, d}
-																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																		<td 
+                                                                            class="border border-base-300 transition-colors p-0 cursor-pointer {getHeatmapClass(heatmapData[d][t])}" 
+                                                                            title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}"
+                                                                            onclick={() => handleCellClick(d, t, schedule.start)}
+                                                                        >
 																			<div class="w-full h-4 min-w-[2rem] flex items-center justify-center text-[8px] font-bold">
                                                                                 {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
                                                                             </div>
@@ -370,6 +393,33 @@
 														</tbody>
 													</table>
 												</div>
+
+                                                <!-- Member Drawer Overlay (Right Side) -->
+                                                {#if selectedCell}
+                                                    <div class="absolute inset-y-0 right-0 w-48 bg-base-100 shadow-2xl border-l border-base-300 z-20 flex flex-col animate-in slide-in-from-right duration-200">
+                                                        <div class="p-3 border-b border-base-300 flex justify-between items-center bg-base-200">
+                                                            <div>
+                                                                <p class="font-bold text-[10px] text-ubuntu">{formatDateOffset(schedule.start, selectedCell.d)}</p>
+                                                                <p class="text-[9px] opacity-60 font-mono">{selectedCell.t}:00 ({selectedCell.members.length})</p>
+                                                            </div>
+                                                            <button class="btn btn-ghost btn-xs btn-circle" onclick={() => selectedCell = null}>✕</button>
+                                                        </div>
+                                                        <div class="flex-1 overflow-y-auto p-3">
+                                                            {#if selectedCell.members.length === 0}
+                                                                <p class="text-[10px] opacity-50 italic text-center py-4">No one free.</p>
+                                                            {:else}
+                                                                <ul class="space-y-1">
+                                                                    {#each selectedCell.members as name}
+                                                                        <li class="flex items-center gap-2 text-[11px]">
+                                                                            <div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+                                                                            <span class="font-neo truncate">{name}</span>
+                                                                        </li>
+                                                                    {/each}
+                                                                </ul>
+                                                            {/if}
+                                                        </div>
+                                                    </div>
+                                                {/if}
 											</div>
 										{/if}
 

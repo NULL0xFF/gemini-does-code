@@ -12,6 +12,12 @@
 	let isLoading = $state(true);
 	let isSaving = $state(false);
 	let error = $state('');
+    let members = $state<any[]>([]);
+    let currentUser = $state<any>(null);
+
+    let isManager = $derived(
+		members.find(m => m.id === currentUser?.id)?.role === 'MANAGER'
+	);
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -20,9 +26,15 @@
 
 	onMount(async () => {
 		try {
-			const group = await fetchJson<any>(`/api/groups/${groupId}`);
+			const [group, memberList, userData] = await Promise.all([
+                fetchJson<any>(`/api/groups/${groupId}`),
+                fetchJson<any[]>(`/api/groups/${groupId}/members`),
+                fetchJson<any>('/api/users/me')
+            ]);
 			groupName = group.name;
 			description = group.description || '';
+            members = memberList;
+            currentUser = userData;
 		} catch (err) {
 			console.error(err);
 			if (!(err instanceof ApiError && err.status === 401)) {
@@ -34,7 +46,7 @@
 	});
 
 	async function handleSubmit() {
-		if (!groupName.trim()) return;
+		if (!groupName.trim() || !isManager) return;
 
 		isSaving = true;
 		try {
@@ -68,6 +80,20 @@
 			}
 		}
 	}
+
+    async function leaveGroup() {
+        if (confirm('Are you sure you want to leave this group?')) {
+            try {
+                // To leave a group, we can delete our own membership
+                await fetchApi(`/api/groups/${groupId}/members/${currentUser.id}`, { method: 'DELETE' });
+                toast.success('You have left the group.');
+                window.location.href = `${base}/dashboard`;
+            } catch (err) {
+                console.error(err);
+                toast.error('Failed to leave group.');
+            }
+        }
+    }
 </script>
 
 <svelte:head>
@@ -113,8 +139,9 @@
 									id="group-name"
 									type="text" 
 									class="input input-bordered w-full font-neo focus:ring-primary" 
+                                    disabled={!isManager}
 									bind:value={groupName}
-									onkeydown={(e) => e.key === 'Enter' && handleSubmit()}
+									onkeydown={(e) => e.key === 'Enter' && isManager && handleSubmit()}
 								/>
 							</div>
 
@@ -123,6 +150,7 @@
 								<textarea 
 									id="description"
 									class="textarea textarea-bordered h-32 w-full font-neo focus:ring-primary" 
+                                    disabled={!isManager}
 									bind:value={description}
 								></textarea>
 							</div>
@@ -130,27 +158,36 @@
 
 						<div class="card-actions justify-end mt-8">
 							<a href="{base}/groups/{groupId}" class="btn btn-ghost">Cancel</a>
-							<button 
-								class="btn btn-primary px-8" 
-								disabled={isSaving || !groupName.trim()}
-								onclick={handleSubmit}
-							>
-								{#if isSaving}
-									<span class="loading loading-spinner"></span>
-								{/if}
-								Save Changes
-							</button>
+                            {#if isManager}
+                                <button 
+                                    class="btn btn-primary px-8" 
+                                    disabled={isSaving || !groupName.trim()}
+                                    onclick={handleSubmit}
+                                >
+                                    {#if isSaving}
+                                        <span class="loading loading-spinner"></span>
+                                    {/if}
+                                    Save Changes
+                                </button>
+                            {/if}
 						</div>
 					</div>
 				</div>
 
 				<div class="card bg-base-100 shadow-xl mt-8 border-t-4 border-error">
 					<div class="card-body">
-						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu text-ubuntu">Danger Zone</h3>
-						<p class="text-sm opacity-80 mb-4">Deleting this group will remove all schedules, parties, and memberships permanently.</p>
-						<button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteGroup}>
-							Delete This Group
-						</button>
+						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu">Danger Zone</h3>
+						{#if isManager}
+                            <p class="text-sm opacity-80 mb-4 font-neo">Deleting this group will remove all schedules, parties, and memberships permanently.</p>
+                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteGroup}>
+                                Delete This Group
+                            </button>
+                        {:else}
+                            <p class="text-sm opacity-80 mb-4 font-neo">Leaving this group will remove your access to its schedules and parties.</p>
+                            <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={leaveGroup}>
+                                Leave This Group
+                            </button>
+                        {/if}
 					</div>
 				</div>
 			{/if}
