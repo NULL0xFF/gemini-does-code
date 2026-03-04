@@ -30,6 +30,8 @@ public class GroupService {
     private final InviteCodeRepository inviteCodeRepository;
     private final UserRepository userRepository;
     private final ScheduleRepository scheduleRepository;
+    private final PartyMemberRepository partyMemberRepository;
+    private final MemberAvailabilityRepository memberAvailabilityRepository;
 
     public GroupResponse getGroupDetails(UUID groupId, UUID userId) {
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
@@ -80,6 +82,36 @@ public class GroupService {
                         member.getUser().getAvatar()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void removeMember(UUID groupId, UUID userId, UUID targetUserId) {
+        GroupMember actor = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
+
+        GroupMember target = groupMemberRepository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found in group", targetUserId));
+
+        // Permission check: Either user is leaving voluntarily, OR manager is kicking someone
+        if (!userId.equals(targetUserId) && actor.getRole() != GroupRole.MANAGER) {
+            throw new ForbiddenException("Only managers can remove other members", groupId);
+        }
+
+        // Prevent deleting the last manager if others exist (simplified: just don't allow manager to leave if they are the only manager)
+        if (target.getRole() == GroupRole.MANAGER) {
+            List<GroupMember> allMembers = groupMemberRepository.findByGroupId(groupId);
+            long managerCount = allMembers.stream().filter(m -> m.getRole() == GroupRole.MANAGER).count();
+            if (managerCount <= 1 && userId.equals(targetUserId)) {
+                throw new ValidationException("Cannot leave group as the only manager. Delete the group instead or promote another member.", groupId);
+            }
+        }
+
+        // Cleanup: Remove from all parties and availability in this group
+        partyMemberRepository.deleteByUserIdAndGroupId(targetUserId, groupId);
+        memberAvailabilityRepository.deleteByUserIdAndGroupId(targetUserId, groupId);
+        
+        // Remove membership
+        groupMemberRepository.delete(target);
     }
 
     @Transactional

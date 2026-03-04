@@ -96,6 +96,14 @@ public class GroupController {
         return ResponseEntity.ok(groupService.getGroupMembers(groupId, userId));
     }
 
+    @Operation(summary = "Remove Member / Leave Group", description = "Removes a member from the group. Users can remove themselves, or MANAGERS can remove anyone.")
+    @DeleteMapping("/{groupId}/members/{targetUserId}")
+    public ResponseEntity<Void> removeMember(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @PathVariable UUID targetUserId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.removeMember(groupId, userId, targetUserId);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Generate Invite Code", description = "Generates a new invite code for the group (MANAGER only).")
     @PostMapping("/{groupId}/invites")
     public ResponseEntity<InviteCodeResponse> generateInviteCode(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @RequestBody InviteCodeRequest request) {
