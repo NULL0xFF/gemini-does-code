@@ -21,6 +21,16 @@
 		{ id: '1', title: 'March Week 1 Reset', start: '2026-03-04 10:00', end: '2026-03-11 05:00', status: 'ACTIVE' },
 		{ id: '2', title: 'March Week 2 Reset', start: '2026-03-11 10:00', end: '2026-03-18 05:00', status: 'PLANNED' }
 	]);
+	
+	let openHeatmapId = $state<string | null>(null);
+	let parties = $state([
+		{ id: 'p1', scheduleId: '1', title: 'Valtan HM Fast', members: 4, max: 8, status: 'On-going' },
+		{ id: 'p2', scheduleId: '1', title: 'Biackiss NM Learning', members: 6, max: 8, status: 'Planned' }
+	]);
+
+	function toggleHeatmap(id: string) {
+		openHeatmapId = openHeatmapId === id ? null : id;
+	}
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -127,17 +137,64 @@
 							{#each schedules as schedule}
 								<div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4 {schedule.status === 'ACTIVE' ? 'border-success' : 'border-neutral'}">
 									<div class="card-body p-5">
-										<div class="flex justify-between items-start">
+										<div class="flex justify-between items-center">
 											<div>
-												<h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
+												<div class="flex items-center gap-2">
+													<h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
+													<div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
+														{schedule.status}
+													</div>
+												</div>
 												<p class="text-sm opacity-70 mt-1 font-mono">{schedule.start} ~ {schedule.end}</p>
 											</div>
-											<div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
-												{schedule.status}
-											</div>
+											<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id)}>
+												{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
+											</button>
 										</div>
-										<div class="card-actions justify-end mt-4">
-											<button class="btn btn-sm btn-primary">View Heatmap</button>
+
+										{#if openHeatmapId === schedule.id}
+											<div class="mt-4 overflow-x-auto bg-base-200 p-2 rounded-lg">
+												<table class="table table-xs w-full text-center border-separate border-spacing-0">
+													<thead>
+														<tr>
+															<th class="border border-base-300 sticky left-0 bg-base-200">Date \ Time</th>
+															{#each Array(24) as _, i}
+																<th class="font-mono px-1 border border-base-300">{i.toString().padStart(2, '0')}</th>
+															{/each}
+														</tr>
+													</thead>
+													<tbody>
+														{#each Array(8) as _, d}
+															<tr>
+																<th class="font-mono whitespace-nowrap px-2 py-1 border border-base-300 sticky left-0 bg-base-200">Day {d + 1}</th>
+																{#each Array(24) as _, t}
+																	<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="Day {d + 1}, {t}:00">
+																		<div class="w-6 h-6 mx-auto"></div>
+																	</td>
+																{/each}
+															</tr>
+														{/each}
+													</tbody>
+												</table>
+											</div>
+										{/if}
+
+										<div class="mt-6 pt-4 border-t border-base-300">
+											<h5 class="text-md font-bold text-ubuntu mb-3">Top Parties</h5>
+											<div class="space-y-2">
+												{#each parties.filter(p => p.scheduleId === schedule.id).slice(0, 5) as party}
+													<div class="flex justify-between items-center bg-base-200 p-3 rounded-md hover:bg-base-300 cursor-pointer transition-colors">
+														<div class="flex items-center gap-3">
+															<span class="font-bold text-sm text-neo">{party.title}</span>
+															<span class="text-xs opacity-60 font-mono">({party.members}/{party.max})</span>
+														</div>
+														<span class="badge badge-sm badge-outline">{party.status}</span>
+													</div>
+												{/each}
+												{#if parties.filter(p => p.scheduleId === schedule.id).length === 0}
+													<p class="text-sm opacity-50 italic">No parties created yet for this schedule.</p>
+												{/if}
+											</div>
 										</div>
 									</div>
 								</div>
@@ -145,9 +202,9 @@
 						{/if}
 					</div>
 
-					<!-- Sidebar: Roster -->
+					<!-- Sidebar: Members -->
 					<div class="space-y-6">
-						<h3 class="text-2xl font-bold text-ubuntu">Roster ({members.length})</h3>
+						<h3 class="text-2xl font-bold text-ubuntu">Members ({members.length})</h3>
 						<div class="card bg-base-100 shadow-md">
 							<div class="card-body p-0">
 								<ul class="menu bg-base-100 w-full rounded-box">
