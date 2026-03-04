@@ -54,6 +54,19 @@
 			isSaving = false;
 		}
 	}
+
+	async function deleteGroup() {
+		if (confirm('Are you absolutely sure you want to delete this group? This action is irreversible.')) {
+			try {
+				await fetchApi(`/api/groups/${groupId}`, { method: 'DELETE' });
+				alert('Group deleted successfully.');
+				window.location.href = `${base}/dashboard`;
+			} catch (err) {
+				console.error(err);
+				alert('Failed to delete group.');
+			}
+		}
+	}
 </script>
 
 <svelte:head>
@@ -134,7 +147,7 @@
 					<div class="card-body">
 						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu text-ubuntu">Danger Zone</h3>
 						<p class="text-sm opacity-80 mb-4">Deleting this group will remove all schedules, parties, and memberships permanently.</p>
-						<button class="btn btn-error btn-outline w-full sm:w-auto">
+						<button class="btn btn-error btn-outline w-full sm:w-auto" onclick={deleteGroup}>
 							Delete This Group
 						</button>
 					</div>

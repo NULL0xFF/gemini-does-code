@@ -7,41 +7,123 @@
 
 	let groupId = $derived($page.params.id);
 	let group = $state<any>(null);
+	let members = $state<any[]>([]);
+	let schedules = $state<any[]>([]);
+	let currentUser = $state<any>(null);
+	
 	let isLoading = $state(true);
 	let error = $state('');
 
-	// Mock data for the UI before backend implementation
-	let isManager = $state(true); 
-	let members = $state([
-		{ id: '1', username: 'NULL0xFF', role: 'MANAGER' },
-		{ id: '2', username: 'MokoKoko', role: 'MEMBER' },
-		{ id: '3', username: 'BardLife', role: 'MEMBER' }
-	]);
-	let schedules = $state([
-		{ id: '1', title: 'March Week 1 Reset', start: '2026-03-04 10:00', end: '2026-03-11 05:00', status: 'ACTIVE' },
-		{ id: '2', title: 'March Week 2 Reset', start: '2026-03-11 10:00', end: '2026-03-18 05:00', status: 'PLANNED' }
-	]);
-	
+	let isManager = $derived(
+		members.find(m => m.id === currentUser?.id)?.role === 'MANAGER'
+	);
+
 	let openHeatmapId = $state<string | null>(null);
 	let expandedPartyId = $state<string | null>(null);
+	let parties = $state<any[]>([]);
+	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
 
-	let parties = $state([
-		{ 
-			id: 'p1', scheduleId: '1', title: 'Valtan HM Fast', members: 4, max: 8, status: 'On-going', start: '2026-03-05 20:00',
-			joinedMembers: ['NULL0xFF', 'MokoKoko', 'BardLife', 'GunlancerPro'] 
-		},
-		{ 
-			id: 'p2', scheduleId: '1', title: 'Biackiss NM Learning', members: 6, max: 8, status: 'Planned', start: '2026-03-06 21:00',
-			joinedMembers: ['NULL0xFF', 'Newbie1', 'Newbie2', 'Newbie3', 'Newbie4', 'MokoKoko'] 
+	async function fetchData() {
+		try {
+			const [groupData, memberData, scheduleData, userData] = await Promise.all([
+				fetchJson<any>(`/api/groups/${groupId}`),
+				fetchJson<any[]>(`/api/groups/${groupId}/members`),
+				fetchJson<any[]>(`/api/groups/${groupId}/schedules`),
+				fetchJson<any>('/api/users/me')
+			]);
+			
+			group = groupData;
+			members = memberData;
+			schedules = scheduleData;
+			currentUser = userData;
+		} catch (err) {
+			console.error(err);
+			if (!(err instanceof ApiError && err.status === 401)) {
+				error = 'Failed to load group details.';
+			}
+		} finally {
+			isLoading = false;
 		}
-	]);
-
-	function toggleHeatmap(id: string) {
-		openHeatmapId = openHeatmapId === id ? null : id;
 	}
 
-	function toggleParty(id: string) {
+	async function fetchParties(scheduleId: string) {
+		try {
+			const data = await fetchJson<any[]>(`/api/schedules/${scheduleId}/parties`);
+			parties = [...parties.filter(p => p.scheduleId !== scheduleId), ...data.map(p => ({ ...p, scheduleId }))];
+		} catch (err) {
+			console.error('Failed to fetch parties:', err);
+		}
+	}
+
+    async function fetchHeatmap(scheduleId: string, startDate: string) {
+        try {
+            const data = await fetchJson<any[]>(`/api/schedules/${scheduleId}/availability`);
+            
+            // Initialize 8x24 grid with zeros
+            const grid = Array(8).fill(0).map(() => Array(24).fill(0));
+            const baseDate = new Date(startDate);
+            baseDate.setHours(0, 0, 0, 0);
+
+            data.forEach(userAvail => {
+                userAvail.blocks.forEach((block: any) => {
+                    const blockDate = new Date(block.start);
+                    const dayDiff = Math.floor((blockDate.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+                    const hour = blockDate.getHours();
+
+                    if (dayDiff >= 0 && dayDiff < 8 && hour >= 0 && hour < 24) {
+                        grid[dayDiff][hour]++;
+                    }
+                });
+            });
+
+            heatmapData = grid;
+        } catch (err) {
+            console.error('Failed to fetch heatmap:', err);
+        }
+    }
+
+	async function toggleHeatmap(id: string, startDate: string) {
+		if (openHeatmapId !== id) {
+            await fetchHeatmap(id, startDate);
+        }
+        openHeatmapId = openHeatmapId === id ? null : id;
+	}
+
+    function getHeatmapClass(count: number) {
+        if (!count) return 'bg-base-100';
+        const total = members.length;
+        const ratio = count / total;
+        if (ratio >= 0.8) return 'bg-success text-success-content';
+        if (ratio >= 0.5) return 'bg-primary text-primary-content';
+        if (ratio >= 0.2) return 'bg-info text-info-content';
+        return 'bg-warning text-warning-content';
+    }
+
+	async function toggleParty(id: string, scheduleId: string) {
+		if (expandedPartyId !== id) {
+			await fetchParties(scheduleId);
+		}
 		expandedPartyId = expandedPartyId === id ? null : id;
+	}
+
+	async function joinParty(partyId: string, scheduleId: string) {
+		try {
+			await fetchApi(`/api/parties/${partyId}/join`, { method: 'POST' });
+			await fetchParties(scheduleId);
+		} catch (err) {
+			console.error(err);
+			alert('Failed to join party. It might be full or you are already a member.');
+		}
+	}
+
+	async function leaveParty(partyId: string, scheduleId: string) {
+		try {
+			await fetchApi(`/api/parties/${partyId}/leave`, { method: 'POST' });
+			await fetchParties(scheduleId);
+		} catch (err) {
+			console.error(err);
+			alert('Failed to leave party.');
+		}
 	}
 
 	function formatDateOffset(dateString: string, offsetDays: number) {
@@ -62,26 +144,7 @@
 			window.location.href = `${base}/login`;
 			return;
 		}
-
-		try {
-			// group = await fetchJson<any>(`/api/groups/${groupId}`);
-			// Mocking group fetch
-			setTimeout(() => {
-				group = {
-					id: groupId,
-					name: 'Friday Night Static',
-					description: 'Weekly hard mode clears. Be geared and ready by 8 PM KST.',
-					createdAt: '2026-03-01T12:00:00Z'
-				};
-				isLoading = false;
-			}, 500);
-		} catch (err) {
-			console.error(err);
-			if (!(err instanceof ApiError && err.status === 401)) {
-				error = 'Failed to load group details.';
-				isLoading = false;
-			}
-		}
+		await fetchData();
 	});
 </script>
 
@@ -169,17 +232,17 @@
 											</div>
 											<div class="flex gap-2">
 												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</a>
-												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id)}>
+												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
 													{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
 												</button>
 											</div>
 										</div>
 										<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</a>
 
-										{#if openHeatmapId === schedule.id}
+										{#if openHeatmapId === schedule.id && heatmapData}
 											<div class="mt-4 bg-base-200 p-2 rounded-lg">
 												<div class="hidden md:block overflow-x-auto">
-													<table class="table table-xs w-full text-center border-separate border-spacing-0">
+													<table class="table table-xs w-full text-center border-collapse">
 														<thead>
 															<tr>
 																<th class="border border-base-300 sticky left-0 bg-base-200 w-12 z-10"></th>
@@ -193,8 +256,10 @@
 																<tr>
 																	<th class="font-mono whitespace-nowrap px-1 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{formatDateOffset(schedule.start, d)}</th>
 																	{#each Array(24) as _, t}
-																		<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
-																			<div class="w-full h-4"></div>
+																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																			<div class="w-full h-4 text-[8px] flex items-center justify-center font-bold">
+                                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                                            </div>
 																		</td>
 																	{/each}
 																</tr>
@@ -204,7 +269,7 @@
 												</div>
 
 												<div class="md:hidden overflow-x-auto">
-													<table class="table table-xs w-full text-center border-separate border-spacing-0">
+													<table class="table table-xs w-full text-center border-collapse">
 														<thead>
 															<tr>
 																<th class="border border-base-300 sticky left-0 bg-base-200 w-8 z-10"></th>
@@ -218,8 +283,10 @@
 																<tr>
 																	<th class="font-mono px-0 py-1 border border-base-300 sticky left-0 bg-base-200 text-[10px] z-10">{t}</th>
 																	{#each Array(8) as _, d}
-																		<td class="border border-base-300 bg-base-100 hover:bg-primary/50 transition-colors cursor-pointer p-0" title="{formatDateOffset(schedule.start, d)} {t}:00">
-																			<div class="w-full h-4 min-w-[2rem]"></div>
+																		<td class="border border-base-300 transition-colors p-0 {getHeatmapClass(heatmapData[d][t])}" title="{formatDateOffset(schedule.start, d)} {t}:00 - Available: {heatmapData[d][t]}">
+																			<div class="w-full h-4 min-w-[2rem] flex items-center justify-center text-[8px] font-bold">
+                                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                                            </div>
 																		</td>
 																	{/each}
 																</tr>
@@ -263,7 +330,11 @@
 																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
 																		<p class="font-mono text-base">{party.start}</p>
 																	</div>
-																	<button class="btn btn-sm btn-primary px-6">Join</button>
+																	{#if party.joinedMembers.includes(user.nickname || user.username)}
+																		<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
+																	{:else}
+																		<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
+																	{/if}
 																</div>
 																
 																<div>

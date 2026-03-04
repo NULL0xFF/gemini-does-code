@@ -53,14 +53,12 @@
 				})
 			});
 
-			alert('Party created successfully! (Mock)');
+			alert('Party created successfully!');
 			window.history.back();
 		} catch (err) {
 			console.error(err);
-			if (err instanceof ApiError && err.status === 404) {
-				alert('Party creation endpoint not yet implemented.');
-			} else if (!(err instanceof ApiError && err.status === 401)) {
-				alert('An error occurred while creating the party.');
+			if (!(err instanceof ApiError && err.status === 401)) {
+				alert('Failed to create party. Please check your inputs.');
 			}
 		} finally {
 			isSubmitting = false;

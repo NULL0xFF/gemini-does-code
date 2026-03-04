@@ -22,27 +22,32 @@
 		window.location.href = `${base}/`;
 	}
 
+	onMount(async () => {
+		await fetchInvites();
+	});
+
+	async function fetchInvites() {
+		try {
+			activeCodes = await fetchJson<any[]>(`/api/groups/${groupId}/invites`);
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
 	async function generateCode() {
 		isGenerating = true;
 		try {
-			// Mock backend call
-			await new Promise(r => setTimeout(r, 500));
-			
-			const newCode = 'ARK-' + Math.random().toString(36).substring(2, 6).toUpperCase() + '-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-			
-			const d = new Date();
-			d.setDate(d.getDate() + expirationDays);
-			
-			activeCodes = [{
-				code: newCode,
-				max: maxUsage,
-				used: 0,
-				expires: d.toISOString().split('T')[0]
-			}, ...activeCodes];
+			await fetchApi(`/api/groups/${groupId}/invites`, {
+				method: 'POST',
+				body: JSON.stringify({
+					maxUsage: maxUsage,
+					expirationDays: expirationDays
+				})
+			});
 
-			alert(`Invite code generated: ${newCode}`);
+			await fetchInvites();
+			alert('Invite code generated successfully!');
 			
-			// Reset form
 			maxUsage = 1;
 			expirationDays = 7;
 		} catch (err) {
@@ -55,8 +60,15 @@
 
 	async function revokeCode(codeToRevoke: string) {
 		if (confirm(`Are you sure you want to revoke code ${codeToRevoke}?`)) {
-			// Mock backend call
-			activeCodes = activeCodes.filter(c => c.code !== codeToRevoke);
+			try {
+				await fetchApi(`/api/groups/${groupId}/invites/${codeToRevoke}`, {
+					method: 'DELETE'
+				});
+				await fetchInvites();
+			} catch (err) {
+				console.error(err);
+				alert('Failed to revoke code.');
+			}
 		}
 	}
 

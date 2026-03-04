@@ -86,20 +86,38 @@
 		try {
             // Convert boolean grid to list of time blocks for backend
             const timeBlocks = [];
-            // implementation pending...
+            const startDate = new Date(schedule.start);
+            
+            for (let d = 0; d < schedule.days; d++) {
+                for (let t = 0; t < 24; t++) {
+                    if (selectedCells[d][t]) {
+                        // Start of the hour
+                        const start = new Date(startDate);
+                        start.setDate(start.getDate() + d);
+                        start.setHours(t, 0, 0, 0);
+                        
+                        // End of the hour
+                        const end = new Date(start);
+                        end.setHours(t + 1, 0, 0, 0);
+                        
+                        timeBlocks.push({
+                            start: start.toISOString(),
+                            end: end.toISOString()
+                        });
+                    }
+                }
+            }
 
 			await fetchApi(`/api/schedules/${scheduleId}/availability/me`, {
 				method: 'PUT',
-				body: JSON.stringify({ blocks: [] })
+				body: JSON.stringify({ blocks: timeBlocks })
 			});
 
-			alert('Availability submitted successfully! (Mock)');
+			alert('Availability saved successfully!');
 			window.history.back();
 		} catch (err) {
 			console.error(err);
-			if (err instanceof ApiError && err.status === 404) {
-				alert('Availability endpoint not yet implemented.');
-			} else if (!(err instanceof ApiError && err.status === 401)) {
+			if (!(err instanceof ApiError && err.status === 401)) {
 				alert('An error occurred while submitting availability.');
 			}
 		} finally {
