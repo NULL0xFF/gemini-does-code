@@ -23,16 +23,17 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final InviteCodeRepository inviteCodeRepository;
     private final UserRepository userRepository;
+    private final ScheduleRepository scheduleRepository;
 
-    public GroupService(GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, InviteCodeRepository inviteCodeRepository, UserRepository userRepository) {
+    public GroupService(GroupRepository groupRepository, GroupMemberRepository groupMemberRepository, InviteCodeRepository inviteCodeRepository, UserRepository userRepository, ScheduleRepository scheduleRepository) {
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
         this.inviteCodeRepository = inviteCodeRepository;
         this.userRepository = userRepository;
+        this.scheduleRepository = scheduleRepository;
     }
 
     public GroupResponse getGroupDetails(UUID groupId, UUID userId) {
-        // Ensure user is member
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
 
@@ -42,7 +43,6 @@ public class GroupService {
     }
 
     public List<GroupMemberResponse> getGroupMembers(UUID groupId, UUID userId) {
-        // Ensure user is member
         groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new RuntimeException("Access denied"));
 
@@ -142,5 +142,38 @@ public class GroupService {
 
         code.setCurrentUsage(code.getCurrentUsage() + 1);
         inviteCodeRepository.save(code);
+    }
+
+    @Transactional
+    public ScheduleResponse createSchedule(UUID groupId, UUID managerId, String title, LocalDateTime start, LocalDateTime end) {
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new RuntimeException("Only managers can create schedules");
+        }
+
+        if (start == null || end == null || !end.isAfter(start)) {
+            throw new IllegalArgumentException("Invalid schedule time range");
+        }
+
+        ScheduleInstance schedule = new ScheduleInstance();
+        schedule.setGroup(manager.getGroup());
+        schedule.setTitle(title);
+        schedule.setStartTime(start);
+        schedule.setEndTime(end);
+
+        scheduleRepository.save(schedule);
+
+        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
+    }
+
+    public List<ScheduleResponse> getGroupSchedules(UUID groupId, UUID userId) {
+        groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .orElseThrow(() -> new RuntimeException("Access denied"));
+
+        return scheduleRepository.findByGroupIdOrderByStartTimeAsc(groupId).stream()
+                .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime()))
+                .collect(Collectors.toList());
     }
 }

@@ -111,4 +111,18 @@ public class GroupController {
         groupService.joinGroup(userId, request.getCode());
         return ResponseEntity.ok().build();
     }
+
+    @Operation(summary = "Create Schedule", description = "Creates a new schedule for the group (MANAGER only).")
+    @PostMapping("/{groupId}/schedules")
+    public ResponseEntity<ScheduleResponse> createSchedule(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @RequestBody ScheduleRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.createSchedule(groupId, userId, request.getTitle(), request.getStartTime(), request.getEndTime()));
+    }
+
+    @Operation(summary = "List Schedules", description = "Retrieves all schedules for a specific group.")
+    @GetMapping("/{groupId}/schedules")
+    public ResponseEntity<List<ScheduleResponse>> getGroupSchedules(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        return ResponseEntity.ok(groupService.getGroupSchedules(groupId, userId));
+    }
 }
