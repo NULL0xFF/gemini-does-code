@@ -51,6 +51,9 @@ cd frontend
 ## Development Conventions
 
 *   **Git Workflow:** The project follows a standard Git Flow branching strategy with `main` for production, `dev` for active development, and `feat/*` for feature branches. Pull Requests (PRs) should target the `dev` branch.
-*   **Commit Messages:** The repository strictly adheres to **Conventional Commits** format including an emoji.
+*   **Commit Messages**: The repository strictly adheres to **Conventional Commits** format including an emoji.
     *   Format: `type: :emoji: message` (e.g., `feat: ✨ Initialize frontend project`)
+    *   **Prohibition**: Never use the `@` symbol in commit messages (e.g., do not use `@OnDelete`). This prevents accidental GitHub user tagging. Use plain text or alternative descriptions instead.
 *   **Continuous Integration (CI):** A GitHub Action (`frontend-ci.yml`) is configured to run automatically on any PR to the `dev` branch that includes changes in the `frontend/` directory. It ensures that the application builds successfully using Node.js 20.
+*   **Code Style:** Apply [Google Style Guides](https://google.github.io/styleguide/) as the default code style for the current project.
+*   **Commenting:** Add only necessary comments on source code. Do not add comments explaining updates (e.g., "// Update logic"). Always write JavaDoc style comments for required code blocks and APIs.
