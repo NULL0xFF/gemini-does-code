@@ -12,7 +12,8 @@
     let schedule = $state({
         id: scheduleId,
         title: 'Loading...',
-        start: new Date().toISOString(), // Fallback
+        start: new Date().toISOString(),
+        end: new Date().toISOString(),
         days: 8
     });
 
@@ -48,6 +49,7 @@
     function isCellDisabled(d: number, t: number) {
         if (!schedule.start || !schedule.end) return false;
         
+        // baseDate is the local midnight of the day the schedule starts
         const baseDate = new Date(schedule.start);
         baseDate.setHours(0, 0, 0, 0);
         
@@ -156,7 +158,8 @@
                 schedule = {
                     ...schedule,
                     title: s.title,
-                    start: s.start
+                    start: s.start,
+                    end: s.end
                 };
             }
 
@@ -178,7 +181,10 @@
                     const t = diffHoursTotal % 24;
 
                     if (d >= 0 && d < 8 && t >= 0 && t < 24) {
-                        selectedCells[d][t] = true;
+                        // Double check range even when loading from DB
+                        if (!isCellDisabled(d, t)) {
+                            selectedCells[d][t] = true;
+                        }
                     }
                 });
                 selectedCells = [...selectedCells];
