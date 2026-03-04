@@ -19,6 +19,9 @@
     let selectedCells = $state<boolean[][]>(Array(8).fill(null).map(() => Array(24).fill(false)));
     let isDragging = $state(false);
     let dragState = $state(false); // true = selecting, false = deselecting
+	
+	let dragStart = $state<{d: number, t: number} | null>(null);
+	let dragCurrent = $state<{d: number, t: number} | null>(null);
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -33,24 +36,50 @@
 		return `${month}-${day}`;
 	}
 
-    // Drag-to-select logic
+    // Square selection logic
     function handleMouseDown(d: number, t: number) {
         isDragging = true;
         dragState = !selectedCells[d][t];
-        selectedCells[d][t] = dragState;
-        selectedCells = [...selectedCells]; // trigger reactivity
+		dragStart = { d, t };
+		dragCurrent = { d, t };
     }
 
     function handleMouseEnter(d: number, t: number) {
         if (isDragging) {
-            selectedCells[d][t] = dragState;
-            selectedCells = [...selectedCells];
+			dragCurrent = { d, t };
         }
     }
 
     function handleMouseUp() {
-        isDragging = false;
+        if (isDragging && dragStart && dragCurrent) {
+			const minD = Math.min(dragStart.d, dragCurrent.d);
+			const maxD = Math.max(dragStart.d, dragCurrent.d);
+			const minT = Math.min(dragStart.t, dragCurrent.t);
+			const maxT = Math.max(dragStart.t, dragCurrent.t);
+
+			// Apply the selection to the grid
+			for (let d = minD; d <= maxD; d++) {
+				for (let t = minT; t <= maxT; t++) {
+					selectedCells[d][t] = dragState;
+				}
+			}
+			selectedCells = [...selectedCells];
+		}
+		
+		isDragging = false;
+		dragStart = null;
+		dragCurrent = null;
     }
+
+	// Helper to determine if a cell is currently inside the visual drag preview box
+	function isInDragBox(d: number, t: number) {
+		if (!isDragging || !dragStart || !dragCurrent) return false;
+		const minD = Math.min(dragStart.d, dragCurrent.d);
+		const maxD = Math.max(dragStart.d, dragCurrent.d);
+		const minT = Math.min(dragStart.t, dragCurrent.t);
+		const maxT = Math.max(dragStart.t, dragCurrent.t);
+		return d >= minD && d <= maxD && t >= minT && t <= maxT;
+	}
 
 	async function handleSubmit() {
 		isSubmitting = true;
@@ -115,7 +144,7 @@
 					
                     <!-- Desktop Heatmap (Dates = Rows) -->
                     <div class="hidden md:block overflow-x-auto bg-base-200 p-4 rounded-lg">
-                        <table class="table table-xs w-full text-center border-separate border-spacing-1">
+                        <table class="table table-xs w-full text-center border-collapse">
                             <thead>
                                 <tr>
                                     <th class="border-b border-base-300 w-16"></th>
@@ -131,8 +160,8 @@
                                         {#each Array(24) as _, t}
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
-                                                class="border border-base-300 transition-colors cursor-crosshair p-0 rounded-sm
-                                                {selectedCells[d][t] ? 'bg-primary border-primary' : 'bg-base-100 hover:bg-base-300'}"
+                                                class="border border-base-300 transition-colors cursor-crosshair p-0 
+                                                {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
                                                 title="{formatDateOffset(schedule.start, d)} {t}:00"
@@ -148,7 +177,7 @@
 
                     <!-- Mobile Heatmap (Dates = Columns) -->
                     <div class="md:hidden overflow-x-auto bg-base-200 p-2 rounded-lg">
-                        <table class="table table-xs w-full text-center border-separate border-spacing-1">
+                        <table class="table table-xs w-full text-center border-collapse">
                             <thead>
                                 <tr>
                                     <th class="border-b border-base-300 w-8"></th>
@@ -164,8 +193,8 @@
                                         {#each Array(schedule.days) as _, d}
                                             <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
                                             <td 
-                                                class="border border-base-300 transition-colors cursor-crosshair p-0 rounded-sm
-                                                {selectedCells[d][t] ? 'bg-primary border-primary' : 'bg-base-100 hover:bg-base-300'}"
+                                                class="border border-base-300 transition-colors cursor-crosshair p-0 
+                                                {isInDragBox(d, t) ? (dragState ? 'bg-primary/70' : 'bg-base-300') : (selectedCells[d][t] ? 'bg-primary' : 'bg-base-100 hover:bg-base-300')}"
                                                 onmousedown={() => handleMouseDown(d, t)}
                                                 onmouseenter={() => handleMouseEnter(d, t)}
                                                 title="{formatDateOffset(schedule.start, d)} {t}:00"
