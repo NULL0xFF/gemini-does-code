@@ -23,13 +23,25 @@
 	]);
 	
 	let openHeatmapId = $state<string | null>(null);
+	let expandedPartyId = $state<string | null>(null);
+
 	let parties = $state([
-		{ id: 'p1', scheduleId: '1', title: 'Valtan HM Fast', members: 4, max: 8, status: 'On-going' },
-		{ id: 'p2', scheduleId: '1', title: 'Biackiss NM Learning', members: 6, max: 8, status: 'Planned' }
+		{ 
+			id: 'p1', scheduleId: '1', title: 'Valtan HM Fast', members: 4, max: 8, status: 'On-going', start: '2026-03-05 20:00',
+			joinedMembers: ['NULL0xFF', 'MokoKoko', 'BardLife', 'GunlancerPro'] 
+		},
+		{ 
+			id: 'p2', scheduleId: '1', title: 'Biackiss NM Learning', members: 6, max: 8, status: 'Planned', start: '2026-03-06 21:00',
+			joinedMembers: ['NULL0xFF', 'Newbie1', 'Newbie2', 'Newbie3', 'Newbie4', 'MokoKoko'] 
+		}
 	]);
 
 	function toggleHeatmap(id: string) {
 		openHeatmapId = openHeatmapId === id ? null : id;
+	}
+
+	function toggleParty(id: string) {
+		expandedPartyId = expandedPartyId === id ? null : id;
 	}
 
 	function formatDateOffset(dateString: string, offsetDays: number) {
@@ -155,10 +167,14 @@
 												</div>
 												<p class="text-sm opacity-70 mt-1 font-mono">{schedule.start} ~ {schedule.end}</p>
 											</div>
-											<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id)}>
-												{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
-											</button>
+											<div class="flex gap-2">
+												<button class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</button>
+												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id)}>
+													{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
+												</button>
+											</div>
 										</div>
+										<button class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</button>
 
 										{#if openHeatmapId === schedule.id}
 											<div class="mt-4 bg-base-200 p-2 rounded-lg">
@@ -215,15 +231,54 @@
 										{/if}
 
 										<div class="mt-6 pt-4 border-t border-base-300">
-											<h5 class="text-md font-bold text-ubuntu mb-3">Top Parties</h5>
+											<div class="flex justify-between items-center mb-3">
+												<h5 class="text-md font-bold text-ubuntu">Parties</h5>
+												{#if isManager}
+													<button class="btn btn-xs btn-outline btn-secondary">Add Party</button>
+												{/if}
+											</div>
 											<div class="space-y-2">
-												{#each parties.filter(p => p.scheduleId === schedule.id).slice(0, 5) as party}
-													<div class="flex justify-between items-center bg-base-200 p-3 rounded-md hover:bg-base-300 cursor-pointer transition-colors">
-														<div class="flex items-center gap-3">
-															<span class="font-bold text-sm text-neo">{party.title}</span>
-															<span class="text-xs opacity-60 font-mono">({party.members}/{party.max})</span>
+												{#each parties.filter(p => p.scheduleId === schedule.id) as party}
+													<!-- svelte-ignore a11y_click_events_have_key_events -->
+													<!-- svelte-ignore a11y_no_static_element_interactions -->
+													<div class="bg-base-200 rounded-md overflow-hidden transition-all duration-200 border {expandedPartyId === party.id ? 'border-primary shadow-sm' : 'border-transparent'}">
+														<div 
+															class="flex justify-between items-center p-3 hover:bg-base-300 cursor-pointer"
+															onclick={() => toggleParty(party.id)}
+														>
+															<div class="flex items-center gap-3">
+																<span class="font-bold text-sm text-neo">{party.title}</span>
+																<span class="text-xs opacity-60 font-mono">({party.members}/{party.max})</span>
+															</div>
+															<div class="flex items-center gap-2">
+																<span class="badge badge-sm badge-outline">{party.status}</span>
+																<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+															</div>
 														</div>
-														<span class="badge badge-sm badge-outline">{party.status}</span>
+														
+														{#if expandedPartyId === party.id}
+															<div class="p-4 bg-base-100 border-t border-base-300 text-sm">
+																<div class="flex justify-between items-start mb-4">
+																	<div>
+																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
+																		<p class="font-mono text-base">{party.start}</p>
+																	</div>
+																	<button class="btn btn-sm btn-primary px-6">Join</button>
+																</div>
+																
+																<div>
+																	<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-2">Members</p>
+																	<div class="flex flex-wrap gap-2">
+																		{#each party.joinedMembers as member}
+																			<span class="badge badge-neutral">{member}</span>
+																		{/each}
+																		{#each Array(party.max - party.members) as _}
+																			<span class="badge badge-outline border-dashed opacity-40">Empty Slot</span>
+																		{/each}
+																	</div>
+																</div>
+															</div>
+														{/if}
 													</div>
 												{/each}
 												{#if parties.filter(p => p.scheduleId === schedule.id).length === 0}
