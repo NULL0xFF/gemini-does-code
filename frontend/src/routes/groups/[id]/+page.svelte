@@ -30,6 +30,9 @@
     let deleteScheduleModal: ReturnType<typeof ConfirmationModal>;
     let scheduleToDelete = $state<string | null>(null);
 
+    let deletePartyModal: ReturnType<typeof ConfirmationModal>;
+    let partyToDelete = $state<any | null>(null);
+
 	async function fetchData() {
 	        try {
 	                const [groupData, memberData, scheduleData, userData] = await Promise.all([
@@ -147,6 +150,25 @@
         }
     }
 
+    async function requestDeleteParty(party: any) {
+        partyToDelete = party;
+        deletePartyModal.show();
+    }
+
+    async function confirmDeleteParty() {
+        if (!partyToDelete) return;
+        try {
+            await fetchApi(`/api/parties/${partyToDelete.id}`, { method: 'DELETE' });
+            await fetchParties(partyToDelete.scheduleId);
+            toast.success('Party deleted.');
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to delete party.');
+        } finally {
+            partyToDelete = null;
+        }
+    }
+
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
 		d.setDate(d.getDate() + offsetDays);
@@ -251,7 +273,7 @@
 	</div>
 
 	<main class="flex-1 p-4 md:p-8">
-		<div class="container mx-auto max-w-6xl">
+		<div class="container mx-auto max-6xl">
 			<div class="flex items-center gap-4 mb-8">
 				<a href="{base}/dashboard" class="btn btn-ghost btn-circle" aria-label="Back to Dashboard">
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
@@ -452,6 +474,19 @@
 															<div class="flex items-center gap-3">
 																<span class="font-bold text-sm text-neo">{party.title}</span>
 																<span class="text-xs opacity-60 font-mono">({party.members}/{party.max})</span>
+                                                                {#if isManager}
+                                                                    <div class="dropdown dropdown-end dropdown-bottom" onclick={(e) => e.stopPropagation()}>
+                                                                        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                        <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                                        <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3 h-3"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                                                        </label>
+                                                                        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                        <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-24 border border-base-200">
+                                                                            <li><button class="text-xs text-error" onclick={() => requestDeleteParty(party)}>Delete</button></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                {/if}
 															</div>
 															<div class="flex items-center gap-2">
 																<span class="badge badge-sm badge-outline">{party.status}</span>
@@ -542,4 +577,14 @@
     confirmText="Delete Schedule"
     type="error"
     onConfirm={confirmDeleteSchedule}
+/>
+
+<ConfirmationModal
+    bind:this={deletePartyModal}
+    id="delete-party-modal"
+    title="Delete Party"
+    message="Are you sure you want to delete this party? All joined members will be removed and the party will be permanently deleted."
+    confirmText="Delete Party"
+    type="error"
+    onConfirm={confirmDeleteParty}
 />
