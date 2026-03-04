@@ -6,8 +6,18 @@
 
 	let groupId = $derived($page.params.id);
 	let title = $state('');
-	let startDate = $state('');
-	let endDate = $state('');
+	
+	// Initialize with today's date
+	let startDate = $state(new Date().toISOString().split('T')[0]);
+	
+	// Initialize with tomorrow's date
+	const getTomorrow = () => {
+		const tomorrow = new Date();
+		tomorrow.setDate(tomorrow.getDate() + 1);
+		return tomorrow.toISOString().split('T')[0];
+	};
+	let endDate = $state(getTomorrow());
+	
 	let isSubmitting = $state(false);
 
 	function logout() {

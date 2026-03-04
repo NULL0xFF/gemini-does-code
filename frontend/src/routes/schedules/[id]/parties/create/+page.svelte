@@ -8,7 +8,15 @@
 	let title = $state('');
 	let raidType = $state('Valtan');
 	let maxMembers = $state(8);
-	let startTime = $state('');
+	
+	// Initialize with current date and time, formatted for datetime-local (YYYY-MM-DDThh:mm)
+	const getInitialTime = () => {
+		const now = new Date();
+		now.setMinutes(0, 0, 0);
+		return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+	};
+	let startTime = $state(getInitialTime());
+	
 	let isSubmitting = $state(false);
 
 	const raidOptions = [
