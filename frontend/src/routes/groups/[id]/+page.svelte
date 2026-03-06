@@ -226,7 +226,7 @@
             toast.success(`Role updated to ${newRole} for ${member.username}.`);
         } catch (err) {
             console.error(err);
-            toast.error('Failed to update role. (Backend implementation planned)');
+            toast.error('Failed to update role.');
         }
     }
 
