@@ -34,6 +34,9 @@
     let deletePartyModal: ReturnType<typeof ConfirmationModal>;
     let partyToDelete = $state<any | null>(null);
 
+    let kickMemberModal: ReturnType<typeof ConfirmationModal>;
+    let memberToKick = $state<any | null>(null);
+
 	async function fetchData() {
 	        try {
 	                const [groupData, memberData, scheduleData, userData] = await Promise.all([
@@ -183,6 +186,46 @@
             console.error(err);
             toast.error('Failed to update party status.');
         }
+    }
+
+    async function requestKickMember(member: any) {
+        memberToKick = member;
+        kickMemberModal.show();
+    }
+
+    async function confirmKickMember() {
+        if (!memberToKick) return;
+        try {
+            await fetchApi(`/api/groups/${groupId}/members/${memberToKick.id}`, { method: 'DELETE' });
+            await fetchData();
+            toast.success(`${memberToKick.username} has been removed from the group.`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to remove member.');
+        } finally {
+            memberToKick = null;
+        }
+    }
+
+    async function toggleAuditorRole(member: any) {
+        try {
+            const isCurrentlyAuditor = member.role === 'AUDITOR';
+            const newRole = isCurrentlyAuditor ? 'MEMBER' : 'AUDITOR';
+            
+            await fetchApi(`/api/groups/${groupId}/members/${member.id}/role`, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: newRole })
+            });
+            await fetchData();
+            toast.success(`Role updated to ${newRole} for ${member.username}.`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update role. (Backend implementation planned)');
+        }
+    }
+
+    function notifyMember(member: any) {
+        toast.info(`Notification feature for ${member.username} is planned.`);
     }
 
     function formatDateOffset(dateString: string, offsetDays: number) {
@@ -582,6 +625,22 @@
 													<p class="text-[10px] opacity-50 uppercase tracking-wider">{member.role}</p>
 												</div>
 											</div>
+
+                                            {#if isManager && member.id !== currentUser?.id}
+                                                <div class="dropdown dropdown-end">
+                                                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                    <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                    <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+                                                    </label>
+                                                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                    <ul tabindex="0" class="dropdown-content z-[40] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                        <li><button class="text-xs" onclick={() => notifyMember(member)}>Notify</button></li>
+                                                        <li><button class="text-xs" onclick={() => toggleAuditorRole(member)}>{member.role === 'AUDITOR' ? 'Revoke Auditor' : 'Grant Auditor'}</button></li>
+                                                        <li><button class="text-xs text-error" onclick={() => requestKickMember(member)}>Kick</button></li>
+                                                    </ul>
+                                                </div>
+                                            {/if}
 										</div>
 									{/each}
 								</div>
@@ -613,3 +672,14 @@
     type="error"
     onConfirm={confirmDeleteParty}
 />
+
+<ConfirmationModal
+    bind:this={kickMemberModal}
+    id="kick-member-modal"
+    title="Kick Member"
+    message="Are you sure you want to remove {memberToKick?.username} from the group? They will be removed from all future parties and their availability data will be deleted. They can rejoin if they have a new invite code."
+    confirmText="Kick Member"
+    type="error"
+    onConfirm={confirmKickMember}
+/>
+
