@@ -139,6 +139,30 @@ public class GroupService {
     }
 
     @Transactional
+    public void updateMemberRole(UUID groupId, UUID managerId, UUID targetUserId, GroupRole newRole) {
+        GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
+                .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
+
+        if (manager.getRole() != GroupRole.MANAGER) {
+            throw new ForbiddenException("Only managers can change member roles", groupId);
+        }
+
+        if (managerId.equals(targetUserId)) {
+            throw new ValidationException("Cannot change your own role. Use the manager transfer feature instead.", groupId);
+        }
+
+        GroupMember target = groupMemberRepository.findByGroupIdAndUserId(groupId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found in group", targetUserId));
+
+        if (newRole == GroupRole.MANAGER) {
+            throw new ValidationException("Use the transfer endpoint to promote someone to MANAGER", groupId);
+        }
+
+        target.setRole(newRole);
+        groupMemberRepository.save(target);
+    }
+
+    @Transactional
     public InviteCodeResponse generateInviteCode(UUID groupId, UUID managerId, Integer maxUsage, Integer expirationDays) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));

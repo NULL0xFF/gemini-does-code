@@ -5,5 +5,6 @@ package com.null0xff.ark.server.enums;
  */
 public enum GroupRole {
     MANAGER,
+    AUDITOR,
     MEMBER
 }
