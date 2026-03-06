@@ -361,11 +361,11 @@
 								<p class="opacity-80 font-neo">{group.description}</p>
 							{/if}
 						</div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
                             {#if isManager}
-                                <a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
+                                <a href="{base}/groups/{groupId}/invites" class="btn btn-primary flex-1 md:flex-none">Invite Members</a>
                             {/if}
-                            <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold">Settings</a>
+                            <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold flex-1 md:flex-none">Settings</a>
                         </div>
 					</div>
 				</div>
@@ -389,39 +389,40 @@
 						{:else}
 							{#each schedules as schedule}
 								<div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4 {schedule.status === 'ACTIVE' ? 'border-success' : 'border-neutral'}">
-									<div class="card-body p-5">
-										<div class="flex justify-between items-center">
-											<div>
-												<div class="flex items-center gap-2">
+									<div class="card-body p-4 sm:p-5">
+										<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+											<div class="w-full">
+												<div class="flex justify-between sm:justify-start items-center gap-2">
 													<h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
-													<div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
-														{schedule.status}
-													</div>
-                                                    {#if isManager}
-                                                        <div class="dropdown dropdown-end dropdown-bottom">
-                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                            <!-- svelte-ignore a11y_label_has_associated_control -->
-                                                            <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
-                                                            </label>
-                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                            <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
-                                                                <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
-                                                                <li><button class="text-sm text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
-                                                            </ul>
+													<div class="flex items-center gap-2">
+                                                        <div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
+                                                            {schedule.status}
                                                         </div>
-                                                    {/if}
+                                                        {#if isManager}
+                                                            <div class="dropdown dropdown-end dropdown-bottom">
+                                                                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                                <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                                                </label>
+                                                                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                                    <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
+                                                                    <li><button class="text-sm text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
+                                                                </ul>
+                                                            </div>
+                                                        {/if}
+                                                    </div>
 												</div>
 												<p class="text-xs opacity-70 mt-1 font-mono">{new Date(schedule.start).toLocaleString()} ~ {new Date(schedule.end).toLocaleString()}</p>
 											</div>
-											<div class="flex gap-2">
-												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</a>
-												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
+											<div class="flex gap-2 w-full sm:w-auto">
+												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline flex-1 sm:flex-none">Submit Availability</a>
+												<button class="btn btn-sm btn-primary flex-1 sm:flex-none" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
 													{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
 												</button>
 											</div>
 										</div>
-										<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</a>
 
 										{#if openHeatmapId === schedule.id && heatmapData}
 											<div class="mt-4 relative bg-base-200 rounded-lg overflow-hidden border border-base-300">
