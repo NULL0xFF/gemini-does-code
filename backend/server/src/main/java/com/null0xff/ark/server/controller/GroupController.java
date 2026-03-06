@@ -104,6 +104,15 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Transfer Manager Role", description = "Transfers the MANAGER role to another member and demotes the current user to MEMBER (MANAGER only).")
+    @ApiResponse(responseCode = "200", description = "Role transferred successfully")
+    @PostMapping("/{groupId}/members/{targetUserId}/transfer")
+    public ResponseEntity<Void> transferManager(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @PathVariable UUID targetUserId) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.transferManager(groupId, userId, targetUserId);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Generate Invite Code", description = "Generates a new invite code for the group (MANAGER only).")
     @PostMapping("/{groupId}/invites")
     public ResponseEntity<InviteCodeResponse> generateInviteCode(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @RequestBody InviteCodeRequest request) {

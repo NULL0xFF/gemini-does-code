@@ -115,6 +115,30 @@ public class GroupService {
     }
 
     @Transactional
+    public void transferManager(UUID groupId, UUID currentManagerId, UUID newManagerId) {
+        if (currentManagerId.equals(newManagerId)) {
+            throw new ValidationException("Cannot transfer management to yourself", groupId);
+        }
+
+        GroupMember currentManager = groupMemberRepository.findByGroupIdAndUserId(groupId, currentManagerId)
+                .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
+
+        if (currentManager.getRole() != GroupRole.MANAGER) {
+            throw new ForbiddenException("Only managers can transfer group ownership", groupId);
+        }
+
+        GroupMember newManager = groupMemberRepository.findByGroupIdAndUserId(groupId, newManagerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Target user is not a member of this group", newManagerId));
+
+        // Perform the transfer
+        newManager.setRole(GroupRole.MANAGER);
+        currentManager.setRole(GroupRole.MEMBER);
+
+        groupMemberRepository.save(newManager);
+        groupMemberRepository.save(currentManager);
+    }
+
+    @Transactional
     public InviteCodeResponse generateInviteCode(UUID groupId, UUID managerId, Integer maxUsage, Integer expirationDays) {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
