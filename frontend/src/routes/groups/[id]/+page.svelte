@@ -563,17 +563,19 @@
 														
 														{#if expandedPartyId === party.id}
 															<div class="p-4 bg-base-100 border-t border-base-300 text-sm rounded-b-md">
-																<div class="flex justify-between items-start mb-4">
-																	<div>
+																<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+																	<div class="w-full">
 																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
 																		<p class="font-mono text-base">{new Date(party.start).toLocaleString()}</p>
 																	</div>
 																	{#if party.status !== 'Done'}
-																		{#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
-																			<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
-																		{:else}
-																			<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
-																		{/if}
+																		<div class="w-full sm:w-auto flex-shrink-0">
+                                                                            {#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
+                                                                                <button class="btn btn-sm btn-error btn-outline w-full sm:w-auto px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
+                                                                            {:else}
+                                                                                <button class="btn btn-sm btn-primary w-full sm:w-auto px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
+                                                                            {/if}
+                                                                        </div>
 																	{/if}
 																</div>
 																
