@@ -104,6 +104,15 @@ public class GroupController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "Update Member Role", description = "Updates the role of a group member (MANAGER only).")
+    @ApiResponse(responseCode = "200", description = "Role updated successfully")
+    @PatchMapping("/{groupId}/members/{targetUserId}/role")
+    public ResponseEntity<Void> updateMemberRole(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID groupId, @PathVariable UUID targetUserId, @RequestBody RoleUpdateRequest request) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+        groupService.updateMemberRole(groupId, userId, targetUserId, request.getRole());
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Transfer Manager Role", description = "Transfers the MANAGER role to another member and demotes the current user to MEMBER (MANAGER only).")
     @ApiResponse(responseCode = "200", description = "Role transferred successfully")
     @PostMapping("/{groupId}/members/{targetUserId}/transfer")
