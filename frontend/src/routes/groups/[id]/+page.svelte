@@ -627,7 +627,7 @@
 											</div>
 
                                             {#if isManager && member.id !== currentUser?.id}
-                                                <div class="dropdown dropdown-end">
+                                                <div class="dropdown dropdown-left {members.indexOf(member) > members.length - 3 ? 'dropdown-top' : 'dropdown-bottom'}">
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <!-- svelte-ignore a11y_label_has_associated_control -->
                                                     <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
