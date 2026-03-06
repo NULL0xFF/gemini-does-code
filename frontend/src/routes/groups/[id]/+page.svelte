@@ -22,6 +22,7 @@
 
 	let openHeatmapId = $state<string | null>(null);
 	let expandedPartyId = $state<string | null>(null);
+    let loadingPartyId = $state<string | null>(null);
 	let parties = $state<any[]>([]);
 	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
     let rawAvailability = $state<any[]>([]);
@@ -32,6 +33,9 @@
 
     let deletePartyModal: ReturnType<typeof ConfirmationModal>;
     let partyToDelete = $state<any | null>(null);
+
+    let kickMemberModal: ReturnType<typeof ConfirmationModal>;
+    let memberToKick = $state<any | null>(null);
 
 	async function fetchData() {
 	        try {
@@ -184,6 +188,46 @@
         }
     }
 
+    async function requestKickMember(member: any) {
+        memberToKick = member;
+        kickMemberModal.show();
+    }
+
+    async function confirmKickMember() {
+        if (!memberToKick) return;
+        try {
+            await fetchApi(`/api/groups/${groupId}/members/${memberToKick.id}`, { method: 'DELETE' });
+            await fetchData();
+            toast.success(`${memberToKick.username} has been removed from the group.`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to remove member.');
+        } finally {
+            memberToKick = null;
+        }
+    }
+
+    async function toggleAuditorRole(member: any) {
+        try {
+            const isCurrentlyAuditor = member.role === 'AUDITOR';
+            const newRole = isCurrentlyAuditor ? 'MEMBER' : 'AUDITOR';
+            
+            await fetchApi(`/api/groups/${groupId}/members/${member.id}/role`, {
+                method: 'PATCH',
+                body: JSON.stringify({ role: newRole })
+            });
+            await fetchData();
+            toast.success(`Role updated to ${newRole} for ${member.username}.`);
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to update role. (Backend implementation planned)');
+        }
+    }
+
+    function notifyMember(member: any) {
+        toast.info(`Notification feature for ${member.username} is planned.`);
+    }
+
     function formatDateOffset(dateString: string, offsetDays: number) {
 		const d = new Date(dateString);
 		d.setDate(d.getDate() + offsetDays);
@@ -229,7 +273,9 @@
 
 	async function toggleParty(id: string, scheduleId: string) {
 		if (expandedPartyId !== id) {
+            loadingPartyId = id;
 			await fetchParties(scheduleId);
+            loadingPartyId = null;
 		}
 		expandedPartyId = expandedPartyId === id ? null : id;
 	}
@@ -315,11 +361,11 @@
 								<p class="opacity-80 font-neo">{group.description}</p>
 							{/if}
 						</div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2 w-full md:w-auto">
                             {#if isManager}
-                                <a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
+                                <a href="{base}/groups/{groupId}/invites" class="btn btn-primary flex-1 md:flex-none">Invite Members</a>
                             {/if}
-                            <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold">Settings</a>
+                            <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold flex-1 md:flex-none">Settings</a>
                         </div>
 					</div>
 				</div>
@@ -343,39 +389,40 @@
 						{:else}
 							{#each schedules as schedule}
 								<div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4 {schedule.status === 'ACTIVE' ? 'border-success' : 'border-neutral'}">
-									<div class="card-body p-5">
-										<div class="flex justify-between items-center">
-											<div>
-												<div class="flex items-center gap-2">
+									<div class="card-body p-4 sm:p-5">
+										<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+											<div class="w-full">
+												<div class="flex justify-between sm:justify-start items-center gap-2">
 													<h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
-													<div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
-														{schedule.status}
-													</div>
-                                                    {#if isManager}
-                                                        <div class="dropdown dropdown-end dropdown-bottom">
-                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                            <!-- svelte-ignore a11y_label_has_associated_control -->
-                                                            <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
-                                                            </label>
-                                                            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-                                                            <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
-                                                                <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
-                                                                <li><button class="text-sm text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
-                                                            </ul>
+													<div class="flex items-center gap-2">
+                                                        <div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
+                                                            {schedule.status}
                                                         </div>
-                                                    {/if}
+                                                        {#if isManager}
+                                                            <div class="dropdown dropdown-end dropdown-bottom">
+                                                                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                                <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM12.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0zM18.75 12a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" /></svg>
+                                                                </label>
+                                                                <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                                <ul tabindex="0" class="dropdown-content z-[10] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                                    <li><button class="text-sm" onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
+                                                                    <li><button class="text-sm text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
+                                                                </ul>
+                                                            </div>
+                                                        {/if}
+                                                    </div>
 												</div>
 												<p class="text-xs opacity-70 mt-1 font-mono">{new Date(schedule.start).toLocaleString()} ~ {new Date(schedule.end).toLocaleString()}</p>
 											</div>
-											<div class="flex gap-2">
-												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline hidden sm:flex">Submit Availability</a>
-												<button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
+											<div class="flex gap-2 w-full sm:w-auto">
+												<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline flex-1 sm:flex-none">Submit Availability</a>
+												<button class="btn btn-sm btn-primary flex-1 sm:flex-none" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
 													{openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
 												</button>
 											</div>
 										</div>
-										<a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline w-full mt-2 sm:hidden">Submit Availability</a>
 
 										{#if openHeatmapId === schedule.id && heatmapData}
 											<div class="mt-4 relative bg-base-200 rounded-lg overflow-hidden border border-base-300">
@@ -506,27 +553,22 @@
                                                                     </div>
                                                                 {/if}
 																<span class="badge badge-sm badge-outline hidden sm:flex {party.status === 'Done' ? 'badge-success text-white' : ''}">{party.status}</span>
-																<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                                                {#if loadingPartyId === party.id}
+                                                                    <span class="loading loading-spinner loading-xs text-primary w-4 h-4"></span>
+                                                                {:else}
+																    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                                                {/if}
 															</div>
 														</div>
 														
 														{#if expandedPartyId === party.id}
 															<div class="p-4 bg-base-100 border-t border-base-300 text-sm rounded-b-md">
-																<div class="flex justify-between items-start mb-4">
-																	<div>
-																		<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
-																		<p class="font-mono text-base">{new Date(party.start).toLocaleString()}</p>
-																	</div>
-																	{#if party.status !== 'Done'}
-																		{#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
-																			<button class="btn btn-sm btn-error btn-outline px-6" onclick={() => leaveParty(party.id, schedule.id)}>Leave</button>
-																		{:else}
-																			<button class="btn btn-sm btn-primary px-6" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join</button>
-																		{/if}
-																	{/if}
+																<div class="mb-4">
+																	<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-1">Start Time</p>
+																	<p class="font-mono text-base">{new Date(party.start).toLocaleString()}</p>
 																</div>
 																
-																<div>
+																<div class="mb-4">
 																	<p class="font-bold text-ubuntu text-xs opacity-60 uppercase mb-2">Members</p>
 																	<div class="flex flex-wrap gap-2">
 																		{#each party.joinedMembers as member}
@@ -537,6 +579,18 @@
 																		{/each}
 																	</div>
 																</div>
+
+                                                                {#if party.status !== 'Done'}
+                                                                    <div class="flex justify-end pt-2 border-t border-base-200 mt-4">
+                                                                        <div class="w-full sm:w-auto">
+                                                                            {#if party.joinedMembers.includes(currentUser?.nickname || currentUser?.username)}
+                                                                                <button class="btn btn-sm btn-error btn-outline w-full sm:w-auto px-10" onclick={() => leaveParty(party.id, schedule.id)}>Leave Party</button>
+                                                                            {:else}
+                                                                                <button class="btn btn-sm btn-primary w-full sm:w-auto px-10" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join Party</button>
+                                                                            {/if}
+                                                                        </div>
+                                                                    </div>
+                                                                {/if}
 															</div>
 														{/if}
 													</div>
@@ -575,6 +629,22 @@
 													<p class="text-[10px] opacity-50 uppercase tracking-wider">{member.role}</p>
 												</div>
 											</div>
+
+                                            {#if isManager && member.id !== currentUser?.id}
+                                                <div class="dropdown dropdown-left {members.indexOf(member) > members.length - 3 ? 'dropdown-top' : 'dropdown-bottom'}">
+                                                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                    <!-- svelte-ignore a11y_label_has_associated_control -->
+                                                    <label tabindex="0" class="btn btn-ghost btn-xs btn-circle opacity-50 hover:opacity-100">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
+                                                    </label>
+                                                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+                                                    <ul tabindex="0" class="dropdown-content z-[40] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
+                                                        <li><button class="text-xs" onclick={() => notifyMember(member)}>Notify</button></li>
+                                                        <li><button class="text-xs" onclick={() => toggleAuditorRole(member)}>{member.role === 'AUDITOR' ? 'Revoke Auditor' : 'Grant Auditor'}</button></li>
+                                                        <li><button class="text-xs text-error" onclick={() => requestKickMember(member)}>Kick</button></li>
+                                                    </ul>
+                                                </div>
+                                            {/if}
 										</div>
 									{/each}
 								</div>
@@ -606,3 +676,14 @@
     type="error"
     onConfirm={confirmDeleteParty}
 />
+
+<ConfirmationModal
+    bind:this={kickMemberModal}
+    id="kick-member-modal"
+    title="Kick Member"
+    message="Are you sure you want to remove {memberToKick?.username} from the group? They will be removed from all future parties and their availability data will be deleted. They can rejoin if they have a new invite code."
+    confirmText="Kick Member"
+    type="error"
+    onConfirm={confirmKickMember}
+/>
+

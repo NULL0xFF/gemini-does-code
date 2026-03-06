@@ -204,64 +204,72 @@
                                 </div>
                             {:else}
                                 <!-- Grid Container -->
-                                <div class="overflow-x-auto p-2 sm:p-4">
+                                <div class="p-2 sm:p-4">
                                     <!-- Desktop Grid -->
-                                    <table class="table table-xs w-full text-center border-collapse hidden md:table">
-                                        <thead>
-                                            <tr>
-                                                <th class="w-16"></th>
-                                                {#each Array(24) as _, i}
-                                                    <th class="font-mono text-[10px] w-6 opacity-60 p-0">{i}</th>
-                                                {/each}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {#each Array(8) as _, d}
+                                    <div class="hidden md:block overflow-x-auto">
+                                        <table class="table table-xs w-full text-center border-collapse">
+                                            <thead>
                                                 <tr>
-                                                    <th class="font-mono whitespace-nowrap text-[10px] px-1 py-2 opacity-60 text-right">{formatDateOffset(schedule.start, d)}</th>
-                                                    {#each Array(24) as _, t}
-                                                        <td 
-                                                            class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
-                                                            onclick={() => handleCellClick(d, t)}
-                                                        >
-                                                            <div class="w-full h-6 text-[9px] flex items-center justify-center font-bold">
-                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
-                                                            </div>
-                                                        </td>
+                                                    <th class="w-16"></th>
+                                                    {#each Array(24) as _, i}
+                                                        <th class="font-mono text-[10px] w-6 opacity-60 p-0">{i}</th>
                                                     {/each}
                                                 </tr>
-                                            {/each}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {#each Array(8) as _, d}
+                                                    <tr>
+                                                        <th class="font-mono whitespace-nowrap text-[10px] px-1 py-2 opacity-60 text-right">{formatDateOffset(schedule.start, d)}</th>
+                                                        {#each Array(24) as _, t}
+                                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                                            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                                                            <td 
+                                                                class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
+                                                                onclick={() => handleCellClick(d, t)}
+                                                            >
+                                                                <div class="w-full h-6 text-[9px] flex items-center justify-center font-bold">
+                                                                    {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                                </div>
+                                                            </td>
+                                                        {/each}
+                                                    </tr>
+                                                {/each}
+                                            </tbody>
+                                        </table>
+                                    </div>
 
                                     <!-- Mobile Grid -->
-                                    <table class="table table-xs w-full text-center border-collapse md:hidden">
-                                        <thead>
-                                            <tr>
-                                                <th class="w-8"></th>
-                                                {#each Array(8) as _, d}
-                                                    <th class="font-mono text-[10px] opacity-60 p-1">{formatDateOffset(schedule.start, d).split(' ')[0]}</th>
-                                                {/each}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {#each Array(24) as _, t}
+                                    <div class="md:hidden overflow-x-auto">
+                                        <table class="table table-xs w-full text-center border-collapse">
+                                            <thead>
                                                 <tr>
-                                                    <th class="font-mono text-[10px] opacity-60 p-0">{t}</th>
+                                                    <th class="w-8"></th>
                                                     {#each Array(8) as _, d}
-                                                        <td 
-                                                            class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
-                                                            onclick={() => handleCellClick(d, t)}
-                                                        >
-                                                            <div class="w-full h-6 min-w-[2rem] text-[9px] flex items-center justify-center font-bold">
-                                                                {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
-                                                            </div>
-                                                        </td>
+                                                        <th class="font-mono text-[10px] opacity-60 p-1">{formatDateOffset(schedule.start, d).split(' ')[0]}</th>
                                                     {/each}
                                                 </tr>
-                                            {/each}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {#each Array(24) as _, t}
+                                                    <tr>
+                                                        <th class="font-mono text-[10px] opacity-60 p-0">{t}</th>
+                                                        {#each Array(8) as _, d}
+                                                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                                                            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                                                            <td 
+                                                                class="border border-base-300 transition-colors cursor-pointer p-0 {getHeatmapClass(heatmapData[d][t])}"
+                                                                onclick={() => handleCellClick(d, t)}
+                                                            >
+                                                                <div class="w-full h-6 min-w-[2rem] text-[9px] flex items-center justify-center font-bold">
+                                                                    {heatmapData[d][t] > 0 ? heatmapData[d][t] : ''}
+                                                                </div>
+                                                            </td>
+                                                        {/each}
+                                                    </tr>
+                                                {/each}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
 
                                 <!-- Member Drawer Overlay (Right Side) -->

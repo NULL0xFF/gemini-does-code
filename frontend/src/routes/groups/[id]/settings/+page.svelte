@@ -18,10 +18,16 @@
 
     let deleteModal: ReturnType<typeof ConfirmationModal>;
     let leaveModal: ReturnType<typeof ConfirmationModal>;
+    let transferModal: ReturnType<typeof ConfirmationModal>;
+    let selectedMemberId = $state<string>('');
 
     let isManager = $derived(
 		members.find(m => m.id === currentUser?.id)?.role === 'MANAGER'
 	);
+
+    let otherMembers = $derived(
+        members.filter(m => m.id !== currentUser?.id)
+    );
 
 	function logout() {
 		localStorage.removeItem('ark_token');
@@ -91,6 +97,18 @@
         } catch (err) {
             console.error(err);
             toast.error('Failed to leave group.');
+        }
+    }
+
+    async function onConfirmTransfer() {
+        if (!selectedMemberId) return;
+        try {
+            await fetchApi(`/api/groups/${groupId}/members/${selectedMemberId}/transfer`, { method: 'POST' });
+            toast.success('Management transferred successfully.');
+            window.location.href = `${base}/groups/${groupId}`;
+        } catch (err) {
+            console.error(err);
+            toast.error('Failed to transfer management.');
         }
     }
 </script>
@@ -178,9 +196,40 @@
 					</div>
 				</div>
 
+                {#if isManager}
+                    <div class="card bg-base-100 shadow-xl mt-8 border-t-4 border-info">
+                        <div class="card-body">
+                            <h3 class="font-bold text-lg mb-2 text-ubuntu">Transfer Management</h3>
+                            <p class="text-sm opacity-80 mb-4 font-neo">Transfer the MANAGER role to another member. You will become a regular MEMBER and lose administrative access.</p>
+                            
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <select 
+                                    class="select select-bordered flex-1" 
+                                    bind:value={selectedMemberId}
+                                >
+                                    <option value="" disabled selected>Select a member to promote</option>
+                                    {#each otherMembers as member}
+                                        <option value={member.id}>{member.username}</option>
+                                    {/each}
+                                </select>
+                                <button 
+                                    class="btn btn-info" 
+                                    disabled={!selectedMemberId}
+                                    onclick={() => transferModal.show()}
+                                >
+                                    Transfer Role
+                                </button>
+                            </div>
+                            {#if otherMembers.length === 0}
+                                <p class="text-xs text-info mt-2 italic">No other members available to transfer role to.</p>
+                            {/if}
+                        </div>
+                    </div>
+                {/if}
+
 				<div class="card bg-base-100 shadow-xl mt-8 border-t-4 border-error">
 					<div class="card-body">
-						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu text-ubuntu text-ubuntu">Danger Zone</h3>
+						<h3 class="text-error font-bold text-lg mb-2 text-ubuntu">Danger Zone</h3>
 						{#if isManager}
                             <p class="text-sm opacity-80 mb-4 font-neo">Deleting this group will remove all schedules, parties, and memberships permanently.</p>
                             <button class="btn btn-error btn-outline w-full sm:w-auto" onclick={() => deleteModal.show()}>
@@ -217,4 +266,14 @@
     confirmText="Leave Group"
     type="warning"
     onConfirm={onConfirmLeave}
+/>
+
+<ConfirmationModal
+    bind:this={transferModal}
+    id="transfer-manager-modal"
+    title="Transfer Management"
+    message="Are you sure you want to transfer group management? You will immediately lose your manager status and become a regular member."
+    confirmText="Transfer and Demote"
+    type="warning"
+    onConfirm={onConfirmTransfer}
 />
