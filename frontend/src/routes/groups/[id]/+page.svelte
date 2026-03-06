@@ -22,6 +22,7 @@
 
 	let openHeatmapId = $state<string | null>(null);
 	let expandedPartyId = $state<string | null>(null);
+    let loadingPartyId = $state<string | null>(null);
 	let parties = $state<any[]>([]);
 	let heatmapData = $state<any>(null); // [dayIndex][hourIndex] = count
     let rawAvailability = $state<any[]>([]);
@@ -229,7 +230,9 @@
 
 	async function toggleParty(id: string, scheduleId: string) {
 		if (expandedPartyId !== id) {
+            loadingPartyId = id;
 			await fetchParties(scheduleId);
+            loadingPartyId = null;
 		}
 		expandedPartyId = expandedPartyId === id ? null : id;
 	}
@@ -506,7 +509,11 @@
                                                                     </div>
                                                                 {/if}
 																<span class="badge badge-sm badge-outline hidden sm:flex {party.status === 'Done' ? 'badge-success text-white' : ''}">{party.status}</span>
-																<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                                                {#if loadingPartyId === party.id}
+                                                                    <span class="loading loading-spinner loading-xs text-primary w-4 h-4"></span>
+                                                                {:else}
+																    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-transform duration-200 {expandedPartyId === party.id ? 'rotate-180 text-primary' : 'opacity-50'}"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>
+                                                                {/if}
 															</div>
 														</div>
 														
