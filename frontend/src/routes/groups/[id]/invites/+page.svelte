@@ -16,6 +16,14 @@
 
 	// List state
 	let activeCodes = $state<any[]>([]);
+    let members = $state<any[]>([]);
+    let currentUser = $state<any>(null);
+    let isLoading = $state(true);
+
+    let isAdmin = $derived(
+        members.find(m => m.id === currentUser?.id)?.role === 'MANAGER' ||
+        members.find(m => m.id === currentUser?.id)?.role === 'AUDITOR'
+    );
 
     let revokeModal: ReturnType<typeof ConfirmationModal>;
     let codeToRevoke = $state<string | null>(null);
@@ -26,7 +34,26 @@
 	}
 
 	onMount(async () => {
-		await fetchInvites();
+        try {
+            const [memberData, userData] = await Promise.all([
+                fetchJson<any[]>(`/api/groups/${groupId}/members`),
+                fetchJson<any>('/api/users/me')
+            ]);
+            members = memberData;
+            currentUser = userData;
+            
+            if (!isAdmin) {
+                toast.error("You don't have permission to manage invites.");
+                window.location.href = `${base}/groups/${groupId}`;
+                return;
+            }
+
+		    await fetchInvites();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            isLoading = false;
+        }
 	});
 
 	async function fetchInvites() {
