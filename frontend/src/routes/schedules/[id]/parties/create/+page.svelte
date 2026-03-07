@@ -7,17 +7,23 @@
     import { toast } from '$lib/stores/toast.svelte';
 
 	let scheduleId = $derived($page.params.id);
-    let schedule = $state<any>(null);
-    let members = $state<any[]>([]);
+	let schedule = $state<any>(null);
+	let members = $state<any[]>([]);
+	let currentUser = $state<any>(null);
+	let isLoading = $state(true);
 	let title = $state('');
 	let raidType = $state('');
 	let maxMembers = $state(8);
 
-    // Heatmap state
-    let heatmapData = $state<any>(null); // [day][hour] = count
-    let rawAvailability = $state<any[]>([]);
-    let selectedCell = $state<{d: number, t: number, members: string[]} | null>(null);
-	
+	// Heatmap state
+	let heatmapData = $state<any>(null); // [day][hour] = count
+	let rawAvailability = $state<any[]>([]);
+	let selectedCell = $state<{d: number, t: number, members: string[]} | null>(null);
+
+	let isAdmin = $derived(
+	    members.find(m => m.id === currentUser?.id)?.role === 'MANAGER' ||
+	    members.find(m => m.id === currentUser?.id)?.role === 'AUDITOR'
+	);	
 	// Initialize with current date and time, formatted for datetime-local (YYYY-MM-DDThh:mm)
 	const getInitialTime = () => {
 		const now = new Date();
@@ -37,22 +43,6 @@
         try {
             const availData = await fetchJson<any[]>(`/api/schedules/${scheduleId}/availability`);
             rawAvailability = availData;
-
-            // We need members list to calculate total ratio for colors
-            // First try to find groupId from the schedule object
-            if (schedule?.group?.id) {
-                members = await fetchJson<any[]>(`/api/groups/${schedule.group.id}/members`);
-            } else {
-                // Fallback: search user groups
-                const userGroups = await fetchJson<any[]>('/api/groups');
-                for (const g of userGroups) {
-                    const groupSchedules = await fetchJson<any[]>(`/api/groups/${g.id}/schedules`);
-                    if (groupSchedules.find((s: any) => s.id === scheduleId)) {
-                        members = await fetchJson<any[]>(`/api/groups/${g.id}/members`);
-                        break;
-                    }
-                }
-            }
 
             if (schedule?.start) {
                 const grid = Array(8).fill(0).map(() => Array(24).fill(0));
@@ -147,11 +137,28 @@
 
     onMount(async () => {
         try {
+            // Fetch current user
+            currentUser = await fetchJson<any>('/api/users/me');
+
             // Fetch schedule details directly
             schedule = await fetchJson<any>(`/api/schedules/${scheduleId}`);
+            
+            // Now we definitely have schedule.group.id
+            if (schedule?.group?.id) {
+                members = await fetchJson<any[]>(`/api/groups/${schedule.group.id}/members`);
+            }
+
+            if (!isAdmin) {
+                toast.error("You don't have permission to organize parties.");
+                window.history.back();
+                return;
+            }
+
             await fetchHeatmapData();
         } catch (err) {
             console.error('Failed to load schedule context:', err);
+        } finally {
+            isLoading = false;
         }
     });
 </script>

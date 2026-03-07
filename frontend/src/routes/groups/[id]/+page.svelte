@@ -20,6 +20,12 @@
 		members.find(m => m.id === currentUser?.id)?.role === 'MANAGER'
 	);
 
+    let isAuditor = $derived(
+        members.find(m => m.id === currentUser?.id)?.role === 'AUDITOR'
+    );
+
+    let isAdmin = $derived(isManager || isAuditor);
+
 	let openHeatmapId = $state<string | null>(null);
 	let expandedPartyId = $state<string | null>(null);
     let loadingPartyId = $state<string | null>(null);
@@ -362,7 +368,7 @@
 							{/if}
 						</div>
                         <div class="flex flex-wrap gap-2 w-full md:w-auto">
-                            {#if isManager}
+                            {#if isAdmin}
                                 <a href="{base}/groups/{groupId}/invites" class="btn btn-primary flex-1 md:flex-none">Invite Members</a>
                             {/if}
                             <a href="{base}/groups/{groupId}/settings" class="btn btn-outline text-ubuntu font-bold flex-1 md:flex-none">Settings</a>
@@ -375,7 +381,7 @@
 					<div class="lg:col-span-2 space-y-6">
 						<div class="flex justify-between items-center">
 							<h3 class="text-2xl font-bold text-ubuntu">Schedules</h3>
-							{#if isManager}
+							{#if isAdmin}
 								<a href="{base}/groups/{groupId}/schedules/create" class="btn btn-sm btn-secondary">New Schedule</a>
 							{/if}
 						</div>
@@ -398,7 +404,7 @@
                                                         <div class="badge {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">
                                                             {schedule.status}
                                                         </div>
-                                                        {#if isManager}
+                                                        {#if isAdmin}
                                                             <div class="dropdown dropdown-end dropdown-bottom">
                                                                 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                                 <!-- svelte-ignore a11y_label_has_associated_control -->
@@ -520,7 +526,7 @@
 										<div class="mt-6 pt-4 border-t border-base-300">
 											<div class="flex justify-between items-center mb-3">
 												<h5 class="text-md font-bold text-ubuntu">Parties</h5>
-												{#if isManager}
+												{#if isAdmin}
 													<a href="{base}/schedules/{schedule.id}/parties/create" class="btn btn-xs btn-outline btn-secondary">Add Party</a>
 												{/if}
 											</div>
@@ -538,7 +544,7 @@
 																<span class="text-xs opacity-60 font-mono shrink-0">({party.members}/{party.max})</span>
 															</div>
 															<div class="flex items-center gap-2 shrink-0">
-                                                                {#if isManager}
+                                                                {#if isAdmin}
                                                                     <div class="dropdown dropdown-end dropdown-left" onclick={(e) => e.stopPropagation()}>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                                         <!-- svelte-ignore a11y_label_has_associated_control -->

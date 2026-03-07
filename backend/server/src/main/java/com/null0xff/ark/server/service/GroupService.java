@@ -167,8 +167,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can generate invite codes", groupId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to generate invite codes", groupId);
         }
 
         String codeStr = "ARK-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase() + "-" + UUID.randomUUID().toString().substring(4, 8).toUpperCase();
@@ -189,8 +189,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can view invite codes", groupId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to view invite codes", groupId);
         }
 
         return inviteCodeRepository.findByGroupId(groupId).stream()
@@ -204,8 +204,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can revoke invite codes", groupId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to revoke invite codes", groupId);
         }
 
         InviteCode code = inviteCodeRepository.findByCode(codeStr)
@@ -254,8 +254,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(groupId, managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", groupId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can create schedules", groupId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to create schedules", groupId);
         }
 
         if (start == null || end == null || !end.isAfter(start)) {
@@ -281,8 +281,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can update schedules", scheduleId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to update schedules", scheduleId);
         }
 
         if (start == null || end == null || !end.isAfter(start)) {
@@ -303,8 +303,8 @@ public class GroupService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can delete schedules", scheduleId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to delete schedules", scheduleId);
         }
 
         scheduleRepository.delete(schedule);

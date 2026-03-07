@@ -1,12 +1,42 @@
 <script lang="ts">
-	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
+    import { base } from '$app/paths';
 	import { page } from '$app/stores';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-	import { fetchApi, ApiError } from '$lib/api';
+	import { fetchApi, fetchJson, ApiError } from '$lib/api';
     import { toast } from '$lib/stores/toast.svelte';
 
 	let groupId = $derived($page.params.id);
 	let title = $state('');
+    let members = $state<any[]>([]);
+    let currentUser = $state<any>(null);
+    let isLoading = $state(true);
+
+    let isAdmin = $derived(
+        members.find(m => m.id === currentUser?.id)?.role === 'MANAGER' ||
+        members.find(m => m.id === currentUser?.id)?.role === 'AUDITOR'
+    );
+
+    onMount(async () => {
+        try {
+            const [memberData, userData] = await Promise.all([
+                fetchJson<any[]>(`/api/groups/${groupId}/members`),
+                fetchJson<any>('/api/users/me')
+            ]);
+            members = memberData;
+            currentUser = userData;
+            
+            if (!isAdmin) {
+                toast.error("You don't have permission to create schedules.");
+                window.location.href = `${base}/groups/${groupId}`;
+                return;
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            isLoading = false;
+        }
+    });
 	
 	// Initialize with today's date at top of hour
 	const getNowISO = () => {

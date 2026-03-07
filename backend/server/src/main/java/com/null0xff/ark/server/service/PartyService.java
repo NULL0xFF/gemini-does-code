@@ -46,8 +46,8 @@ public class PartyService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can create parties", scheduleId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to create parties", scheduleId);
         }
 
         Party party = new Party();
@@ -124,8 +124,8 @@ public class PartyService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can delete parties", partyId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to delete parties", partyId);
         }
 
         partyRepository.delete(party);
@@ -139,8 +139,8 @@ public class PartyService {
         GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), managerId)
                 .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
 
-        if (manager.getRole() != GroupRole.MANAGER) {
-            throw new ForbiddenException("Only managers can mark parties as done", partyId);
+        if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+            throw new ForbiddenException("Insufficient permissions to mark parties as done", partyId);
         }
 
         party.setIsCompleted(completed);
