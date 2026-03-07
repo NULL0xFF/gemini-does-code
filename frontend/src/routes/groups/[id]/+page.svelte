@@ -226,7 +226,7 @@
             toast.success(`Role updated to ${newRole} for ${member.username}.`);
         } catch (err) {
             console.error(err);
-            toast.error('Failed to update role. (Backend implementation planned)');
+            toast.error('Failed to update role.');
         }
     }
 
@@ -636,7 +636,7 @@
 												</div>
 											</div>
 
-                                            {#if isManager && member.id !== currentUser?.id}
+                                            {#if isAdmin && member.id !== currentUser?.id}
                                                 <div class="dropdown dropdown-left {members.indexOf(member) > members.length - 3 ? 'dropdown-top' : 'dropdown-bottom'}">
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <!-- svelte-ignore a11y_label_has_associated_control -->
@@ -646,8 +646,10 @@
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <ul tabindex="0" class="dropdown-content z-[40] menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
                                                         <li><button class="text-xs" onclick={() => notifyMember(member)}>Notify</button></li>
-                                                        <li><button class="text-xs" onclick={() => toggleAuditorRole(member)}>{member.role === 'AUDITOR' ? 'Revoke Auditor' : 'Grant Auditor'}</button></li>
-                                                        <li><button class="text-xs text-error" onclick={() => requestKickMember(member)}>Kick</button></li>
+                                                        {#if isManager}
+                                                            <li><button class="text-xs" onclick={() => toggleAuditorRole(member)}>{member.role === 'AUDITOR' ? 'Revoke Auditor' : 'Grant Auditor'}</button></li>
+                                                            <li><button class="text-xs text-error" onclick={() => requestKickMember(member)}>Kick</button></li>
+                                                        {/if}
                                                     </ul>
                                                 </div>
                                             {/if}
