@@ -7,7 +7,20 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Repository for {@link Party} entities.
+ *
+ * <p>Provides ordered retrieval of all parties belonging to a schedule, which is the
+ * primary access pattern for the party listing UI.
+ */
 @Repository
 public interface PartyRepository extends JpaRepository<Party, UUID> {
-    List<Party> findByScheduleIdOrderByStartTimeAsc(UUID scheduleId);
+
+  /**
+   * Returns all parties for the given schedule, ordered by start time ascending.
+   *
+   * @param scheduleId the schedule's unique identifier
+   * @return a chronologically sorted list of parties; empty if none have been created
+   */
+  List<Party> findByScheduleIdOrderByStartTimeAsc(UUID scheduleId);
 }

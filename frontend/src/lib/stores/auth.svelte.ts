@@ -34,7 +34,7 @@ export const auth = {
         try {
             user = await fetchJson<UserResponse>('/api/users/me');
         } catch {
-            // token already handled by fetchApi
+            // fetchApi handles 401 by clearing the token and redirecting
         }
     },
 

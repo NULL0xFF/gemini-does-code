@@ -16,121 +16,243 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Controller for schedule CRUD, availability, and parties.
+ * Controller for schedule CRUD, member availability, and party listing within schedules.
+ *
+ * <p>Schedule creation/modification requires {@code MANAGER} or {@code AUDITOR} role.
+ * Availability submission is open to all group members. Party creation requires
+ * {@code MANAGER} or {@code AUDITOR} role.
  */
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "Schedules & Availability", description = "Endpoints for managing schedules, availability, and parties")
 public class ScheduleController {
 
-    private final ScheduleService scheduleService;
-    private final AvailabilityService availabilityService;
-    private final PartyService partyService;
+  private final ScheduleService scheduleService;
+  private final AvailabilityService availabilityService;
+  private final PartyService partyService;
 
-    @Operation(summary = "Create Schedule", description = "Creates a new schedule for the group (MANAGER or AUDITOR only).")
-    @ApiResponse(responseCode = "200", description = "Schedule created successfully")
-    @PostMapping("/api/groups/{groupId}/schedules")
-    public ResponseEntity<ScheduleResponse> createSchedule(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID groupId,
-            @RequestBody ScheduleRequest request) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(scheduleService.createSchedule(groupId, userId, request.getTitle(), request.getStartTime(), request.getEndTime()));
-    }
+  /**
+   * Creates a new schedule for the group. Requires {@code MANAGER} or {@code AUDITOR} role.
+   *
+   * @param jwt     the caller's JWT
+   * @param groupId the group's unique identifier
+   * @param request the schedule title and time window
+   * @return the created schedule
+   */
+  @Operation(summary = "Create Schedule", description = "Creates a new schedule for the group. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Schedule created successfully")
+  @ApiResponse(responseCode = "400", description = "Invalid time range (end must be after start)")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @PostMapping("/api/groups/{groupId}/schedules")
+  public ResponseEntity<ScheduleResponse> createSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID groupId,
+      @RequestBody ScheduleRequest request) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(
+        scheduleService.createSchedule(groupId, userId, request.getTitle(), request.getStartTime(), request.getEndTime()));
+  }
 
-    @Operation(summary = "List Schedules", description = "Retrieves all schedules for a specific group.")
-    @ApiResponse(responseCode = "200", description = "Schedules retrieved successfully")
-    @GetMapping("/api/groups/{groupId}/schedules")
-    public ResponseEntity<List<ScheduleResponse>> getGroupSchedules(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID groupId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(scheduleService.getGroupSchedules(groupId, userId));
-    }
+  /**
+   * Returns all schedules for the given group, ordered by start time. Requires membership.
+   *
+   * @param jwt     the caller's JWT
+   * @param groupId the group's unique identifier
+   * @return a chronologically sorted list of schedules
+   */
+  @Operation(summary = "List Schedules", description = "Returns all schedules for the group, ordered by start time. Requires membership.")
+  @ApiResponse(responseCode = "200", description = "Schedules retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the group")
+  @GetMapping("/api/groups/{groupId}/schedules")
+  public ResponseEntity<List<ScheduleResponse>> getGroupSchedules(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID groupId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(scheduleService.getGroupSchedules(groupId, userId));
+  }
 
-    @Operation(summary = "Get Schedule Details", description = "Retrieves details of a specific schedule by its ID.")
-    @GetMapping("/api/schedules/{scheduleId}")
-    public ResponseEntity<ScheduleResponse> getSchedule(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(scheduleService.getSchedule(scheduleId, userId));
-    }
+  /**
+   * Retrieves details of a specific schedule. Requires membership in the owning group.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @return the schedule details
+   */
+  @Operation(summary = "Get Schedule Details", description = "Retrieves details of a specific schedule. Requires membership in the owning group.")
+  @ApiResponse(responseCode = "200", description = "Schedule retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @GetMapping("/api/schedules/{scheduleId}")
+  public ResponseEntity<ScheduleResponse> getSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(scheduleService.getSchedule(scheduleId, userId));
+  }
 
-    @Operation(summary = "Update Schedule", description = "Updates an existing schedule (MANAGER or AUDITOR only).")
-    @PutMapping("/api/schedules/{scheduleId}")
-    public ResponseEntity<Void> updateSchedule(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId,
-            @RequestBody ScheduleRequest request) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        scheduleService.updateSchedule(scheduleId, userId, request.getTitle(), request.getStartTime(), request.getEndTime());
-        return ResponseEntity.ok().build();
-    }
+  /**
+   * Updates a schedule's title and time window. Requires {@code MANAGER} or {@code AUDITOR} role.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @param request    the updated title and time window
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Update Schedule", description = "Updates a schedule's title and time window. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Schedule updated successfully")
+  @ApiResponse(responseCode = "400", description = "Invalid time range")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @PutMapping("/api/schedules/{scheduleId}")
+  public ResponseEntity<Void> updateSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId,
+      @RequestBody ScheduleRequest request) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    scheduleService.updateSchedule(scheduleId, userId, request.getTitle(), request.getStartTime(), request.getEndTime());
+    return ResponseEntity.ok().build();
+  }
 
-    @Operation(summary = "Delete Schedule", description = "Permanently deletes a schedule and all its data (MANAGER or AUDITOR only).")
-    @ApiResponse(responseCode = "200", description = "Schedule deleted successfully")
-    @DeleteMapping("/api/schedules/{scheduleId}")
-    public ResponseEntity<Void> deleteSchedule(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        scheduleService.deleteSchedule(scheduleId, userId);
-        return ResponseEntity.ok().build();
-    }
+  /**
+   * Permanently deletes a schedule and all associated data. Requires {@code MANAGER} or
+   * {@code AUDITOR} role.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Delete Schedule", description = "Permanently deletes a schedule and all associated data. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Schedule deleted successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @DeleteMapping("/api/schedules/{scheduleId}")
+  public ResponseEntity<Void> deleteSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    scheduleService.deleteSchedule(scheduleId, userId);
+    return ResponseEntity.ok().build();
+  }
 
-    @Operation(summary = "Update My Availability", description = "Overwrites the current user's availability for a schedule.")
-    @ApiResponse(responseCode = "200", description = "Availability updated successfully")
-    @PutMapping("/api/schedules/{scheduleId}/availability/me")
-    public ResponseEntity<Void> updateMyAvailability(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId,
-            @RequestBody AvailabilityRequest request) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        availabilityService.updateAvailability(scheduleId, userId, request.getBlocks());
-        return ResponseEntity.ok().build();
-    }
+  /**
+   * Overwrites the caller's availability for the given schedule. Requires membership.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @param request    the list of available time blocks
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Submit My Availability", description = "Overwrites the caller's availability for a schedule. Requires membership in the owning group.")
+  @ApiResponse(responseCode = "200", description = "Availability saved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @PutMapping("/api/schedules/{scheduleId}/availability/me")
+  public ResponseEntity<Void> updateMyAvailability(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId,
+      @RequestBody AvailabilityRequest request) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    availabilityService.updateAvailability(scheduleId, userId, request.getBlocks());
+    return ResponseEntity.ok().build();
+  }
 
-    @Operation(summary = "Get Aggregated Availability", description = "Retrieves all availability blocks for all members in a schedule.")
-    @GetMapping("/api/schedules/{scheduleId}/availability")
-    public ResponseEntity<List<AvailabilityResponse>> getAggregatedAvailability(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(availabilityService.getAggregatedAvailability(scheduleId, userId));
-    }
+  /**
+   * Returns all members' availability for the given schedule. Requires membership.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @return a list of per-user availability block collections
+   */
+  @Operation(summary = "Get Aggregated Availability", description = "Returns all members' availability for a schedule. Requires membership.")
+  @ApiResponse(responseCode = "200", description = "Availability retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @GetMapping("/api/schedules/{scheduleId}/availability")
+  public ResponseEntity<List<AvailabilityResponse>> getAggregatedAvailability(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(availabilityService.getAggregatedAvailability(scheduleId, userId));
+  }
 
-    @Operation(summary = "Get My Availability", description = "Retrieves the current user's previously submitted availability for a schedule.")
-    @GetMapping("/api/schedules/{scheduleId}/availability/me")
-    public ResponseEntity<AvailabilityResponse> getMyAvailability(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(availabilityService.getUserAvailability(scheduleId, userId));
-    }
+  /**
+   * Returns the caller's previously submitted availability for the given schedule.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @return the caller's availability blocks
+   */
+  @Operation(summary = "Get My Availability", description = "Returns the caller's previously submitted availability for a schedule.")
+  @ApiResponse(responseCode = "200", description = "Availability retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @GetMapping("/api/schedules/{scheduleId}/availability/me")
+  public ResponseEntity<AvailabilityResponse> getMyAvailability(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(availabilityService.getUserAvailability(scheduleId, userId));
+  }
 
-    @Operation(summary = "Create Party", description = "Creates a new party for the schedule (MANAGER or AUDITOR only).")
-    @PostMapping("/api/schedules/{scheduleId}/parties")
-    public ResponseEntity<PartyResponse> createParty(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId,
-            @RequestBody PartyRequest request) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(partyService.createParty(scheduleId, userId, request));
-    }
+  /**
+   * Creates a new party for the given schedule. Requires {@code MANAGER} or {@code AUDITOR} role.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @param request    the party details
+   * @return the created party
+   */
+  @Operation(summary = "Create Party", description = "Creates a new party for the schedule. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Party created successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @PostMapping("/api/schedules/{scheduleId}/parties")
+  public ResponseEntity<PartyResponse> createParty(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId,
+      @RequestBody PartyRequest request) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(partyService.createParty(scheduleId, userId, request));
+  }
 
-    @Operation(summary = "List Parties", description = "Retrieves all parties for a specific schedule.")
-    @GetMapping("/api/schedules/{scheduleId}/parties")
-    public ResponseEntity<List<PartyResponse>> getScheduleParties(
-            @AuthenticationPrincipal Jwt jwt,
-            @PathVariable UUID scheduleId) {
-        UUID userId = UUID.fromString(jwt.getSubject());
-        return ResponseEntity.ok(partyService.getScheduleParties(scheduleId, userId));
-    }
+  /**
+   * Returns all parties for the given schedule. Requires membership.
+   *
+   * @param jwt        the caller's JWT
+   * @param scheduleId the schedule's unique identifier
+   * @return a list of parties ordered by start time
+   */
+  @Operation(summary = "List Parties", description = "Returns all parties for a schedule. Requires membership.")
+  @ApiResponse(responseCode = "200", description = "Parties retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @GetMapping("/api/schedules/{scheduleId}/parties")
+  public ResponseEntity<List<PartyResponse>> getScheduleParties(
+      @AuthenticationPrincipal Jwt jwt,
+      @PathVariable UUID scheduleId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(partyService.getScheduleParties(scheduleId, userId));
+  }
 }

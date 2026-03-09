@@ -37,8 +37,6 @@
     let kickMemberModal: ReturnType<typeof ConfirmationModal>;
     let memberToKick = $state<GroupMemberResponse | null>(null);
 
-    // ─── Data fetching ────────────────────────────────────────────────────────
-
     async function fetchData() {
         try {
             const [groupData, memberData, scheduleData] = await Promise.all([
@@ -93,8 +91,6 @@
         }
     }
 
-    // ─── Schedule actions ──────────────────────────────────────────────────────
-
     async function toggleHeatmap(id: string, startDate: string) {
         if (openHeatmapId !== id) await fetchHeatmap(id, startDate);
         openHeatmapId = openHeatmapId === id ? null : id;
@@ -134,8 +130,6 @@
             scheduleToDelete = null;
         }
     }
-
-    // ─── Party actions ─────────────────────────────────────────────────────────
 
     async function toggleParty(id: string, scheduleId: string) {
         if (expandedPartyId !== id) {
@@ -200,8 +194,6 @@
         }
     }
 
-    // ─── Member actions ────────────────────────────────────────────────────────
-
     function requestKickMember(member: GroupMemberResponse) {
         memberToKick = member;
         kickMemberModal.show();
@@ -237,8 +229,6 @@
     function notifyMember(member: GroupMemberResponse) {
         toast.info(`Notification feature for ${member.username} is planned.`);
     }
-
-    // ─── Heatmap helpers ───────────────────────────────────────────────────────
 
     function formatDateOffset(dateString: string, offsetDays: number) {
         const d = new Date(dateString);
