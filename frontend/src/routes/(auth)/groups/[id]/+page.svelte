@@ -507,9 +507,9 @@
                                                                 <span class="text-xs opacity-60 font-mono shrink-0">{party.members}/{party.max}</span>
                                                                 <span class="badge badge-sm {party.status === 'Done' ? 'badge-success text-white' : 'badge-outline'} hidden sm:flex">{party.status}</span>
                                                             </div>
-                                                            <div class="flex items-center gap-2 shrink-0" onclick={(e) => e.stopPropagation()}>
+                                                            <div class="flex items-center gap-2 shrink-0">
                                                                 {#if isAdmin}
-                                                                    <div class="dropdown dropdown-end">
+                                                                    <div class="dropdown dropdown-end" onclick={(e) => e.stopPropagation()}>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                                         <!-- svelte-ignore a11y_label_has_associated_control -->
                                                                         <label tabindex="0" class="btn btn-ghost btn-xs btn-circle">
