@@ -26,6 +26,7 @@ export type ScheduleStatus = 'ACTIVE' | 'PLANNED' | 'PAST';
 
 export interface ScheduleResponse {
     id: string;
+    groupId: string;
     title: string;
     start: string;
     end: string;
