@@ -7,7 +7,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { GroupMemberResponse } from '$lib/types/api';
 
-    let groupId = $derived($page.params.id);
+    let groupId = $derived($page.url.searchParams.get('id') ?? '');
     let title = $state('');
     let members = $state<GroupMemberResponse[]>([]);
     let isLoading = $state(true);
@@ -39,7 +39,7 @@
             members = await fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`);
             if (!isAdmin) {
                 toast.error("You don't have permission to create schedules.");
-                window.location.href = `${base}/groups/${groupId}`;
+                window.location.href = `${base}/groups/detail?id=${groupId}`;
             }
         } catch (err) {
             console.error(err);
@@ -71,7 +71,7 @@
                 })
             });
             toast.success('Schedule created successfully!');
-            window.location.href = `${base}/groups/${groupId}`;
+            window.location.href = `${base}/groups/detail?id=${groupId}`;
         } catch (err) {
             if (!(err instanceof ApiError && err.status === 401)) {
                 toast.error('Failed to create schedule.');
@@ -89,7 +89,7 @@
 <main class="flex-1 p-4 md:p-8">
     <div class="container mx-auto max-w-2xl">
         <div class="flex items-center gap-4 mb-8">
-            <a href="{base}/groups/{groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
+            <a href="{base}/groups/detail?id={groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
             </a>
             <h1 class="text-3xl font-bold text-ubuntu">Create Schedule</h1>
@@ -132,7 +132,7 @@
                 </div>
 
                 <div class="card-actions justify-end mt-8">
-                    <a href="{base}/groups/{groupId}" class="btn btn-ghost">Cancel</a>
+                    <a href="{base}/groups/detail?id={groupId}" class="btn btn-ghost">Cancel</a>
                     <button
                         class="btn btn-secondary px-8"
                         disabled={isSubmitting || !title.trim() || !startDate || !endDate}

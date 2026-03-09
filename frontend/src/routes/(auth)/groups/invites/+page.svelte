@@ -8,7 +8,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { GroupMemberResponse, InviteCodeResponse } from '$lib/types/api';
 
-    let groupId = $derived($page.params.id);
+    let groupId = $derived($page.url.searchParams.get('id') ?? '');
 
     let maxUsage = $state(1);
     let expirationDays = $state(7);
@@ -32,7 +32,7 @@
 
             if (!isAdmin) {
                 toast.error("You don't have permission to manage invites.");
-                window.location.href = `${base}/groups/${groupId}`;
+                window.location.href = `${base}/groups/detail?id=${groupId}`;
                 return;
             }
 
@@ -97,7 +97,7 @@
 <main class="flex-1 p-4 md:p-8">
     <div class="container mx-auto max-w-4xl">
         <div class="flex items-center gap-4 mb-8">
-            <a href="{base}/groups/{groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
+            <a href="{base}/groups/detail?id={groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
             </a>
             <div>

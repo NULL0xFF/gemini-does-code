@@ -7,7 +7,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { ScheduleResponse, GroupMemberResponse, AvailabilityResponse } from '$lib/types/api';
 
-    let scheduleId = $derived($page.params.id);
+    let scheduleId = $derived($page.url.searchParams.get('id') ?? '');
     let schedule = $state<ScheduleResponse | null>(null);
     let members = $state<GroupMemberResponse[]>([]);
     let isLoading = $state(true);

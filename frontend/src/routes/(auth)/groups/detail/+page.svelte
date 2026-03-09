@@ -8,7 +8,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { GroupResponse, GroupMemberResponse, ScheduleResponse, PartyResponse, AvailabilityResponse } from '$lib/types/api';
 
-    let groupId = $derived($page.params.id);
+    let groupId = $derived($page.url.searchParams.get('id') ?? '');
     let group = $state<GroupResponse | null>(null);
     let members = $state<GroupMemberResponse[]>([]);
     let schedules = $state<ScheduleResponse[]>([]);
@@ -301,9 +301,9 @@
                     </div>
                     <div class="flex gap-2 shrink-0">
                         {#if isAdmin}
-                            <a href="{base}/groups/{groupId}/invites" class="btn btn-primary">Invite Members</a>
+                            <a href="{base}/groups/invites?id={groupId}" class="btn btn-primary">Invite Members</a>
                         {/if}
-                        <a href="{base}/groups/{groupId}/settings" class="btn btn-outline font-bold">Settings</a>
+                        <a href="{base}/groups/settings?id={groupId}" class="btn btn-outline font-bold">Settings</a>
                     </div>
                 </div>
             </div>
@@ -316,7 +316,7 @@
                     <div class="flex items-center justify-between">
                         <h3 class="text-2xl font-bold text-ubuntu">Schedules</h3>
                         {#if isAdmin}
-                            <a href="{base}/groups/{groupId}/schedules/create" class="btn btn-sm btn-secondary">New Schedule</a>
+                            <a href="{base}/groups/schedules/create?id={groupId}" class="btn btn-sm btn-secondary">New Schedule</a>
                         {/if}
                     </div>
 
@@ -342,7 +342,7 @@
                                             </p>
                                         </div>
                                         <div class="flex items-center gap-1 shrink-0">
-                                            <a href="{base}/schedules/{schedule.id}/availability" class="btn btn-sm btn-outline">Submit Availability</a>
+                                            <a href="{base}/schedules/availability?id={schedule.id}" class="btn btn-sm btn-outline">Submit Availability</a>
                                             <button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
                                                 {openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
                                             </button>
@@ -468,7 +468,7 @@
                                         <div class="flex items-center justify-between mb-3">
                                             <h5 class="font-bold text-ubuntu">Parties</h5>
                                             {#if isAdmin}
-                                                <a href="{base}/schedules/{schedule.id}/parties/create" class="btn btn-xs btn-outline btn-secondary">Add Party</a>
+                                                <a href="{base}/schedules/parties/create?id={schedule.id}" class="btn btn-xs btn-outline btn-secondary">Add Party</a>
                                             {/if}
                                         </div>
 

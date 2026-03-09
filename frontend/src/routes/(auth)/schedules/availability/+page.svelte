@@ -6,7 +6,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { ScheduleResponse, AvailabilityResponse } from '$lib/types/api';
 
-    let scheduleId = $derived($page.params.id);
+    let scheduleId = $derived($page.url.searchParams.get('id') ?? '');
     let isSubmitting = $state(false);
 
     let schedule = $state<ScheduleResponse>({
