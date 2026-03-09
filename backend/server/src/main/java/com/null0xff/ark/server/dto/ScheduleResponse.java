@@ -33,6 +33,9 @@ public class ScheduleResponse {
   @Schema(description = "Derived status: PLANNED, ACTIVE, or PAST", example = "ACTIVE")
   private String status;
 
+  @Schema(description = "Unique identifier of the group this schedule belongs to")
+  private UUID groupId;
+
   /**
    * Constructs a {@code ScheduleResponse}, deriving {@link #status} from the schedule's
    * time window relative to the current instant.
@@ -42,11 +45,12 @@ public class ScheduleResponse {
    * @param start the schedule start time; may be {@code null}
    * @param end   the schedule end time; may be {@code null}
    */
-  public ScheduleResponse(UUID id, String title, Instant start, Instant end) {
+  public ScheduleResponse(UUID id, String title, Instant start, Instant end, UUID groupId) {
     this.id = id;
     this.title = title;
     this.start = start != null ? start.toString() : null;
     this.end = end != null ? end.toString() : null;
+    this.groupId = groupId;
 
     if (start != null && end != null) {
       Instant now = Instant.now();

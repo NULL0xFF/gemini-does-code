@@ -118,11 +118,9 @@
         try {
             schedule = await fetchJson<ScheduleResponse>(`/api/schedules/detail?scheduleId=${scheduleId}`);
 
-            // ScheduleResponse doesn't include group; fetch members via a separate approach
-            // The schedule response gives us scheduleId; we need groupId separately
-            // For now, we read members after fetching the group via the scheduleId
-            // Since the API doesn't expose groupId in ScheduleResponse, we skip member check for admin guard
-            // Admins redirected appropriately on group page before arriving here
+            if (schedule?.groupId) {
+                members = await fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${schedule.groupId}`);
+            }
             await fetchHeatmapData();
         } catch (err) {
             console.error('Failed to load schedule context:', err);
