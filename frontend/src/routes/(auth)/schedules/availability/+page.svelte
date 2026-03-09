@@ -11,6 +11,7 @@
 
     let schedule = $state<ScheduleResponse>({
         id: '',
+        groupId: '',
         title: 'Loading...',
         start: new Date().toISOString(),
         end: new Date().toISOString(),
