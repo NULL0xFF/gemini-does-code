@@ -70,8 +70,6 @@ jobs:
         run: |
           mkdir -p release-artifacts
           cp backend/server/build/libs/server-$BASE_VERSION.jar release-artifacts/ark-server-$FINAL_VERSION.jar
-          cp backend/sample-plugin/build/libs/sample-plugin-$BASE_VERSION.jar release-artifacts/sample-plugin-$FINAL_VERSION.jar
-          cp backend/plugin-api/build/libs/plugin-api-$BASE_VERSION.jar release-artifacts/plugin-api-$FINAL_VERSION.jar
 
       - name: Cleanup Old Pre-releases
         if: env.IS_PRERELEASE == 'true'
