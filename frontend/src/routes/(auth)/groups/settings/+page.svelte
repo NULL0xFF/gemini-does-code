@@ -8,7 +8,7 @@
     import { toast } from '$lib/stores/toast.svelte';
     import type { GroupResponse, GroupMemberResponse } from '$lib/types/api';
 
-    let groupId = $derived($page.params.id);
+    let groupId = $derived($page.url.searchParams.get('id') ?? '');
     let groupName = $state('');
     let description = $state('');
     let isLoading = $state(true);
@@ -52,7 +52,7 @@
                 body: JSON.stringify({ groupId: groupId,  name: groupName, description  })
             });
             toast.success('Group settings updated!');
-            window.location.href = `${base}/groups/${groupId}`;
+            window.location.href = `${base}/groups/detail?id=${groupId}`;
         } catch {
             toast.error('Failed to update group settings.');
         } finally {
@@ -86,7 +86,7 @@
         try {
             await fetchApi(`/api/members/transfer`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: selectedMemberId }) });
             toast.success('Management transferred successfully.');
-            window.location.href = `${base}/groups/${groupId}`;
+            window.location.href = `${base}/groups/detail?id=${groupId}`;
         } catch {
             toast.error('Failed to transfer management.');
         }
@@ -100,7 +100,7 @@
 <main class="flex-1 p-4 md:p-8">
     <div class="container mx-auto max-w-2xl">
         <div class="flex items-center gap-4 mb-8">
-            <a href="{base}/groups/{groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
+            <a href="{base}/groups/detail?id={groupId}" class="btn btn-ghost btn-circle" aria-label="Back to Group">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
             </a>
             <h1 class="text-3xl font-bold text-ubuntu">Group Settings</h1>
@@ -113,7 +113,7 @@
         {:else if error}
             <div class="alert alert-error shadow-lg">
                 <span>{error}</span>
-                <a href="{base}/groups/{groupId}" class="btn btn-sm btn-ghost">Return</a>
+                <a href="{base}/groups/detail?id={groupId}" class="btn btn-sm btn-ghost">Return</a>
             </div>
         {:else}
             <div class="card bg-base-100 shadow-xl">
