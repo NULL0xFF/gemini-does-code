@@ -1,0 +1,43 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  application:
+    name: ark-resolver
+  
+  # Default Database Profile (MariaDB)
+  datasource:
+    url: jdbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:ark_resolver}?createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:secret}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+logging:
+  level:
+    org.pf4j: DEBUG
+
+# Custom Application Properties
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  jwt:
+    secret: ${JWT_SECRET:your-256-bit-secret-key-goes-here-change-me}
+    expiration-ms: 86400000 # 24 hours
+  oauth2:
+    discord:
+      client-id: ${DISCORD_CLIENT_ID:}
+      client-secret: ${DISCORD_CLIENT_SECRET:}
+      redirect-uri: ${DISCORD_REDIRECT_URI:${app.frontend-url}/login/callback}
+
+# Swagger UI Config
+springdoc:
+  swagger-ui:
+    path: /api/docs
+  api-docs:
+    path: /api/docs-json
