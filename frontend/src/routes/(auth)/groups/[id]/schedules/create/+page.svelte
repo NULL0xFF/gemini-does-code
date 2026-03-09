@@ -36,7 +36,7 @@
 
     onMount(async () => {
         try {
-            members = await fetchJson<GroupMemberResponse[]>(`/api/groups/${groupId}/members`);
+            members = await fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`);
             if (!isAdmin) {
                 toast.error("You don't have permission to create schedules.");
                 window.location.href = `${base}/groups/${groupId}`;
@@ -61,9 +61,10 @@
 
         isSubmitting = true;
         try {
-            await fetchApi(`/api/groups/${groupId}/schedules`, {
+            await fetchApi(`/api/schedules/create`, {
                 method: 'POST',
                 body: JSON.stringify({
+                    groupId,
                     title,
                     startTime: new Date(startDate).toISOString(),
                     endTime: new Date(endDate).toISOString()

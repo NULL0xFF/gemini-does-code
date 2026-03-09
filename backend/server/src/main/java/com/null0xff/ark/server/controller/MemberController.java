@@ -10,16 +10,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -30,7 +29,7 @@ import java.util.UUID;
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/groups/{groupId}/members")
+@RequestMapping("/api/members")
 @Tag(name = "Members", description = "Endpoints for managing group membership and roles")
 public class MemberController {
 
@@ -50,7 +49,7 @@ public class MemberController {
   @GetMapping
   public ResponseEntity<List<GroupMemberResponse>> getGroupMembers(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId) {
+      @RequestParam UUID groupId) {
     UUID userId = UUID.fromString(jwt.getSubject());
     return ResponseEntity.ok(memberService.getGroupMembers(groupId, userId));
   }
@@ -60,8 +59,7 @@ public class MemberController {
    * may remove other members.
    *
    * @param jwt          the caller's JWT
-   * @param groupId      the group's unique identifier
-   * @param targetUserId the user to remove
+   * @param payload      the request containing groupId and targetUserId
    * @return 200 OK on success
    */
   @Operation(summary = "Remove Member / Leave Group", description = "Removes a member from the group. Members may remove themselves; MANAGER can remove anyone.")
@@ -69,12 +67,13 @@ public class MemberController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller lacks permission to remove this member")
   @ApiResponse(responseCode = "404", description = "Member not found in the group")
-  @DeleteMapping("/{targetUserId}")
+  @PostMapping("/remove")
   public ResponseEntity<Void> removeMember(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
-      @PathVariable UUID targetUserId) {
+      @RequestBody Map<String, UUID> payload) {
     UUID userId = UUID.fromString(jwt.getSubject());
+    UUID groupId = payload.get("groupId");
+    UUID targetUserId = payload.get("targetUserId");
     memberService.removeMember(groupId, userId, targetUserId);
     return ResponseEntity.ok().build();
   }
@@ -84,9 +83,7 @@ public class MemberController {
    * Promoting to {@code MANAGER} is handled by the transfer endpoint.
    *
    * @param jwt          the caller's JWT
-   * @param groupId      the group's unique identifier
-   * @param targetUserId the user whose role is to be updated
-   * @param request      the new role
+   * @param request      the role update request containing groupId, targetUserId, and new role
    * @return 200 OK on success
    */
   @Operation(summary = "Update Member Role", description = "Changes a member's role to AUDITOR or MEMBER. Requires MANAGER role.")
@@ -95,14 +92,12 @@ public class MemberController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller does not hold the MANAGER role")
   @ApiResponse(responseCode = "404", description = "Member not found in the group")
-  @PatchMapping("/{targetUserId}/role")
+  @PostMapping("/role")
   public ResponseEntity<Void> updateMemberRole(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
-      @PathVariable UUID targetUserId,
       @RequestBody RoleUpdateRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    memberService.updateMemberRole(groupId, userId, targetUserId, request.getRole());
+    memberService.updateMemberRole(request.getGroupId(), userId, request.getTargetUserId(), request.getRole());
     return ResponseEntity.ok().build();
   }
 
@@ -111,8 +106,7 @@ public class MemberController {
    * {@code MEMBER}. Requires {@code MANAGER} role.
    *
    * @param jwt          the caller's JWT
-   * @param groupId      the group's unique identifier
-   * @param targetUserId the user to promote to {@code MANAGER}
+   * @param payload      the request containing groupId and targetUserId
    * @return 200 OK on success
    */
   @Operation(summary = "Transfer Manager Role", description = "Transfers MANAGER role to another member and demotes the caller to MEMBER. Requires MANAGER role.")
@@ -121,12 +115,13 @@ public class MemberController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller does not hold the MANAGER role")
   @ApiResponse(responseCode = "404", description = "Target user is not a member of the group")
-  @PostMapping("/{targetUserId}/transfer")
+  @PostMapping("/transfer")
   public ResponseEntity<Void> transferManager(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
-      @PathVariable UUID targetUserId) {
+      @RequestBody Map<String, UUID> payload) {
     UUID userId = UUID.fromString(jwt.getSubject());
+    UUID groupId = payload.get("groupId");
+    UUID targetUserId = payload.get("targetUserId");
     memberService.transferManager(groupId, userId, targetUserId);
     return ResponseEntity.ok().build();
   }

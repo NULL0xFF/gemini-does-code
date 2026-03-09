@@ -28,7 +28,7 @@
 
     onMount(async () => {
         try {
-            members = await fetchJson<GroupMemberResponse[]>(`/api/groups/${groupId}/members`);
+            members = await fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`);
 
             if (!isAdmin) {
                 toast.error("You don't have permission to manage invites.");
@@ -46,7 +46,7 @@
 
     async function fetchInvites() {
         try {
-            activeCodes = await fetchJson<InviteCodeResponse[]>(`/api/groups/${groupId}/invites`);
+            activeCodes = await fetchJson<InviteCodeResponse[]>(`/api/invites/list?groupId=${groupId}`);
         } catch (err) {
             console.error(err);
         }
@@ -55,10 +55,7 @@
     async function generateCode() {
         isGenerating = true;
         try {
-            await fetchApi(`/api/groups/${groupId}/invites`, {
-                method: 'POST',
-                body: JSON.stringify({ maxUsage, expirationDays })
-            });
+            await fetchApi(`/api/invites/create`, { method: 'POST', body: JSON.stringify({ groupId: groupId,  maxUsage, expirationDays  }) });
             await fetchInvites();
             toast.success('Invite code generated!');
             maxUsage = 1;
@@ -78,7 +75,7 @@
     async function confirmRevoke() {
         if (!codeToRevoke) return;
         try {
-            await fetchApi(`/api/groups/${groupId}/invites/${codeToRevoke}`, { method: 'DELETE' });
+            await fetchApi(`/api/invites/revoke`, { method: 'POST', body: JSON.stringify({ groupId: groupId, code: codeToRevoke }) });
             await fetchInvites();
             toast.success('Code revoked.');
         } catch {

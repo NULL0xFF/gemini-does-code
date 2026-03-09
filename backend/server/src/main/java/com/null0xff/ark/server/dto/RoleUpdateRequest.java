@@ -17,5 +17,8 @@ import lombok.NoArgsConstructor;
 public class RoleUpdateRequest {
 
   @Schema(description = "The new role to assign; MANAGER is not permitted here", example = "AUDITOR")
+  private java.util.UUID groupId;
+  private java.util.UUID targetUserId;
+  @Schema(description = "The new role to assign; MANAGER is not permitted here", example = "AUDITOR")
   private GroupRole role;
 }

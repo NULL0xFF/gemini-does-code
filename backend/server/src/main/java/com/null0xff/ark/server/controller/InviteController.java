@@ -11,66 +11,64 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
- * Controller for group invite code management and the join-by-code flow.
+ * Controller for group invite operations.
  *
- * <p>Code generation, listing, and revocation require the {@code MANAGER} or
- * {@code AUDITOR} role. Joining via code is open to any authenticated user.
+ * <p>Generating and viewing invite codes requires {@code MANAGER} or {@code AUDITOR} role.
+ * Joining via code is open to any authenticated user.
  */
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Invites", description = "Endpoints for managing group invite codes")
+@Tag(name = "Invites", description = "Endpoints for generating and using group invite codes")
 public class InviteController {
 
   private final InviteService inviteService;
 
   /**
-   * Generates a new invite code for the group. Requires {@code MANAGER} or {@code AUDITOR} role.
+   * Generates a new 8-character alphanumeric invite code. Requires {@code MANAGER} or {@code AUDITOR} role.
    *
    * @param jwt     the caller's JWT
-   * @param groupId the group's unique identifier
-   * @param request max usage count and expiration days
-   * @return the generated invite code details
+   * @param request the invite code request
+   * @return the newly created invite code details
    */
-  @Operation(summary = "Generate Invite Code", description = "Generates a new invite code for the group. Requires MANAGER or AUDITOR role.")
+  @Operation(summary = "Generate Invite Code", description = "Creates a new invite code. Requires MANAGER or AUDITOR role.")
   @ApiResponse(responseCode = "200", description = "Invite code generated successfully")
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
-  @PostMapping("/api/groups/{groupId}/invites")
+  @PostMapping("/api/invites/create")
   public ResponseEntity<InviteCodeResponse> generateInviteCode(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
       @RequestBody InviteCodeRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    return ResponseEntity.ok(
-        inviteService.generateInviteCode(groupId, userId, request.getMaxUsage(), request.getExpirationDays()));
+    return ResponseEntity.ok(inviteService.generateInviteCode(
+        request.getGroupId(), userId, request.getMaxUsage(), request.getExpirationDays()));
   }
 
   /**
-   * Returns all active invite codes for the group. Requires {@code MANAGER} or {@code AUDITOR} role.
+   * Retrieves all active invite codes for the specified group. Requires {@code MANAGER} or {@code AUDITOR} role.
    *
    * @param jwt     the caller's JWT
    * @param groupId the group's unique identifier
-   * @return a list of active (non-expired, non-exhausted) invite codes
+   * @return a list of active invite codes
    */
   @Operation(summary = "List Active Invites", description = "Returns all active invite codes for the group. Requires MANAGER or AUDITOR role.")
   @ApiResponse(responseCode = "200", description = "Invite codes retrieved successfully")
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
-  @GetMapping("/api/groups/{groupId}/invites")
+  @GetMapping("/api/invites/list")
   public ResponseEntity<List<InviteCodeResponse>> getActiveInviteCodes(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId) {
+      @RequestParam UUID groupId) {
     UUID userId = UUID.fromString(jwt.getSubject());
     return ResponseEntity.ok(inviteService.getActiveInviteCodes(groupId, userId));
   }
@@ -79,8 +77,7 @@ public class InviteController {
    * Revokes a specific invite code. Requires {@code MANAGER} or {@code AUDITOR} role.
    *
    * @param jwt     the caller's JWT
-   * @param groupId the group's unique identifier
-   * @param code    the invite code string to revoke
+   * @param payload the request containing groupId and code
    * @return 200 OK on success
    */
   @Operation(summary = "Revoke Invite Code", description = "Permanently revokes an invite code. Requires MANAGER or AUDITOR role.")
@@ -88,12 +85,13 @@ public class InviteController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role, or code belongs to a different group")
   @ApiResponse(responseCode = "404", description = "Invite code not found")
-  @DeleteMapping("/api/groups/{groupId}/invites/{code}")
+  @PostMapping("/api/invites/revoke")
   public ResponseEntity<Void> revokeInviteCode(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
-      @PathVariable String code) {
+      @RequestBody Map<String, Object> payload) {
     UUID userId = UUID.fromString(jwt.getSubject());
+    UUID groupId = UUID.fromString(payload.get("groupId").toString());
+    String code = payload.get("code").toString();
     inviteService.revokeInviteCode(groupId, userId, code);
     return ResponseEntity.ok().build();
   }

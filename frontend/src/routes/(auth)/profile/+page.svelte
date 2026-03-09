@@ -56,7 +56,7 @@
 
     async function confirmDelete() {
         try {
-            await fetchApi('/api/users/me', { method: 'DELETE' });
+            await fetchApi('/api/users/me/delete', { method: 'POST' });
             toast.success('Account deleted successfully. We hope to see you again!');
             auth.logout();
         } catch {

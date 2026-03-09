@@ -133,10 +133,10 @@
 
     async function loadData() {
         try {
-            const s = await fetchJson<ScheduleResponse>(`/api/schedules/${scheduleId}`);
+            const s = await fetchJson<ScheduleResponse>(`/api/schedules/detail?scheduleId=${scheduleId}`);
             schedule = s;
 
-            const myAvail = await fetchJson<AvailabilityResponse>(`/api/schedules/${scheduleId}/availability/me`);
+            const myAvail = await fetchJson<AvailabilityResponse>(`/api/schedules/availability/me?scheduleId=${scheduleId}`);
             if (myAvail?.blocks && schedule.start) {
                 const baseDate = new Date(schedule.start);
                 baseDate.setHours(0, 0, 0, 0);
@@ -173,10 +173,7 @@
                 }
             }
 
-            await fetchApi(`/api/schedules/${scheduleId}/availability/me`, {
-                method: 'PUT',
-                body: JSON.stringify({ blocks })
-            });
+            await fetchApi(`/api/schedules/availability/me`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleId,  blocks  }) });
             toast.success('Availability saved!');
             window.history.back();
         } catch (err) {

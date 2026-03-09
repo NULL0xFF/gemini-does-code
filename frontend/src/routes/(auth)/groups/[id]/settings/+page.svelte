@@ -27,8 +27,8 @@
     onMount(async () => {
         try {
             const [group, memberList] = await Promise.all([
-                fetchJson<GroupResponse>(`/api/groups/${groupId}`),
-                fetchJson<GroupMemberResponse[]>(`/api/groups/${groupId}/members`)
+                fetchJson<GroupResponse>(`/api/groups/detail?groupId=${groupId}`),
+                fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`)
             ]);
             groupName = group.name;
             description = group.description || '';
@@ -47,9 +47,9 @@
 
         isSaving = true;
         try {
-            await fetchApi(`/api/groups/${groupId}`, {
-                method: 'PUT',
-                body: JSON.stringify({ name: groupName, description })
+            await fetchApi(`/api/groups/update`, {
+                method: 'POST',
+                body: JSON.stringify({ groupId: groupId,  name: groupName, description  })
             });
             toast.success('Group settings updated!');
             window.location.href = `${base}/groups/${groupId}`;
@@ -62,7 +62,7 @@
 
     async function onConfirmDelete() {
         try {
-            await fetchApi(`/api/groups/${groupId}`, { method: 'DELETE' });
+            await fetchApi(`/api/groups/delete`, { method: 'POST', body: JSON.stringify({ groupId: groupId }) });
             toast.success('Group deleted.');
             window.location.href = `${base}/dashboard`;
         } catch {
@@ -73,7 +73,7 @@
     async function onConfirmLeave() {
         if (!auth.user) return;
         try {
-            await fetchApi(`/api/groups/${groupId}/members/${auth.user.id}`, { method: 'DELETE' });
+            await fetchApi(`/api/members/remove`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: auth.user.id }) });
             toast.success('You have left the group.');
             window.location.href = `${base}/dashboard`;
         } catch {
@@ -84,7 +84,7 @@
     async function onConfirmTransfer() {
         if (!selectedMemberId) return;
         try {
-            await fetchApi(`/api/groups/${groupId}/members/${selectedMemberId}/transfer`, { method: 'POST' });
+            await fetchApi(`/api/members/transfer`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: selectedMemberId }) });
             toast.success('Management transferred successfully.');
             window.location.href = `${base}/groups/${groupId}`;
         } catch {
