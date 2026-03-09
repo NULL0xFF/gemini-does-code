@@ -10,5 +10,7 @@ import lombok.NoArgsConstructor;
 public class PartyCompleteRequest {
 
     @Schema(description = "Whether the party is completed or not", example = "true")
+    private java.util.UUID partyId;
+    @Schema(description = "Whether the party is completed or not", example = "true")
     private Boolean completed;
 }

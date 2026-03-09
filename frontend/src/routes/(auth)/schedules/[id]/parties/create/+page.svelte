@@ -34,7 +34,7 @@
 
     async function fetchHeatmapData() {
         try {
-            const availData = await fetchJson<AvailabilityResponse[]>(`/api/schedules/${scheduleId}/availability`);
+            const availData = await fetchJson<AvailabilityResponse[]>(`/api/schedules/availability?scheduleId=${scheduleId}`);
             rawAvailability = availData;
 
             if (schedule?.start) {
@@ -93,9 +93,10 @@
 
         isSubmitting = true;
         try {
-            await fetchApi(`/api/schedules/${scheduleId}/parties`, {
+            await fetchApi(`/api/schedules/parties/create`, {
                 method: 'POST',
                 body: JSON.stringify({
+                    scheduleId,
                     title,
                     raidType: raidType || 'General',
                     maxMembers,
@@ -115,7 +116,7 @@
 
     onMount(async () => {
         try {
-            schedule = await fetchJson<ScheduleResponse>(`/api/schedules/${scheduleId}`);
+            schedule = await fetchJson<ScheduleResponse>(`/api/schedules/detail?scheduleId=${scheduleId}`);
 
             // ScheduleResponse doesn't include group; fetch members via a separate approach
             // The schedule response gives us scheduleId; we need groupId separately

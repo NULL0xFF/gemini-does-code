@@ -16,6 +16,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class InviteCodeRequest {
 
     @Schema(description = "Maximum number of times this code can be used", example = "5")
+    private java.util.UUID groupId;
+
+    @io.swagger.v3.oas.annotations.media.Schema(description = "Maximum number of times the code can be used", example = "5")
     private Integer maxUsage;
 
     @Schema(description = "Number of days until the code expires", example = "7")

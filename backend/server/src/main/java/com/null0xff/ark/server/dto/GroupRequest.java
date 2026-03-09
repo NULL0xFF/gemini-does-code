@@ -16,6 +16,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class GroupRequest {
 
     @Schema(description = "The name of the group", example = "Friday Night Static", requiredMode = Schema.RequiredMode.REQUIRED)
+    private java.util.UUID groupId;
+
+    @io.swagger.v3.oas.annotations.media.Schema(description = "The name of the group", example = "Friday Night Static", requiredMode = io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED)
     private String name;
 
     @Schema(description = "Optional description of the group", example = "Weekly raids and horizontal content.")

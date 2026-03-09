@@ -17,6 +17,8 @@ import java.util.List;
 public class AvailabilityRequest {
 
     @Schema(description = "List of available time blocks")
+    private java.util.UUID scheduleId;
+    @io.swagger.v3.oas.annotations.media.Schema(description = "List of available time blocks")
     private List<AvailabilityBlock> blocks;
 
 

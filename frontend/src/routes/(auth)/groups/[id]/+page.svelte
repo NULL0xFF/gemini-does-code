@@ -40,9 +40,9 @@
     async function fetchData() {
         try {
             const [groupData, memberData, scheduleData] = await Promise.all([
-                fetchJson<GroupResponse>(`/api/groups/${groupId}`),
-                fetchJson<GroupMemberResponse[]>(`/api/groups/${groupId}/members`),
-                fetchJson<ScheduleResponse[]>(`/api/groups/${groupId}/schedules`)
+                fetchJson<GroupResponse>(`/api/groups/detail?groupId=${groupId}`),
+                fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`),
+                fetchJson<ScheduleResponse[]>(`/api/schedules/list?groupId=${groupId}`)
             ]);
             group = groupData;
             members = memberData;
@@ -61,7 +61,7 @@
 
     async function fetchParties(scheduleId: string) {
         try {
-            const data = await fetchJson<PartyResponse[]>(`/api/schedules/${scheduleId}/parties`);
+            const data = await fetchJson<PartyResponse[]>(`/api/schedules/parties?scheduleId=${scheduleId}`);
             parties = [...parties.filter(p => p.scheduleId !== scheduleId), ...data.map(p => ({ ...p, scheduleId }))];
         } catch {
             // non-fatal; parties section will show empty
@@ -70,7 +70,7 @@
 
     async function fetchHeatmap(scheduleId: string, startDate: string) {
         try {
-            const data = await fetchJson<AvailabilityResponse[]>(`/api/schedules/${scheduleId}/availability`);
+            const data = await fetchJson<AvailabilityResponse[]>(`/api/schedules/availability?scheduleId=${scheduleId}`);
             rawAvailability = data;
 
             const grid = Array.from({ length: 8 }, () => Array(24).fill(0));
@@ -102,10 +102,7 @@
         const newTitle = prompt(`Enter new title for "${oldTitle}":`, oldTitle);
         if (!newTitle || newTitle === oldTitle || !schedule) return;
         try {
-            await fetchApi(`/api/schedules/${scheduleId}`, {
-                method: 'PUT',
-                body: JSON.stringify({ title: newTitle, startTime: schedule.start, endTime: schedule.end })
-            });
+            await fetchApi(`/api/schedules/update`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleId,  title: newTitle, startTime: schedule.start, endTime: schedule.end  }) });
             await fetchData();
             toast.success('Schedule renamed.');
         } catch {
@@ -121,7 +118,7 @@
     async function confirmDeleteSchedule() {
         if (!scheduleToDelete) return;
         try {
-            await fetchApi(`/api/schedules/${scheduleToDelete}`, { method: 'DELETE' });
+            await fetchApi(`/api/schedules/delete`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleToDelete }) });
             await fetchData();
             toast.success('Schedule deleted.');
         } catch {
@@ -148,7 +145,7 @@
     async function confirmDeleteParty() {
         if (!partyToDelete) return;
         try {
-            await fetchApi(`/api/parties/${partyToDelete.id}`, { method: 'DELETE' });
+            await fetchApi(`/api/parties/delete`, { method: 'POST', body: JSON.stringify({ partyId: partyToDelete.id }) });
             await fetchParties(partyToDelete.scheduleId);
             toast.success('Party deleted.');
         } catch {
@@ -161,9 +158,9 @@
     async function togglePartyStatus(party: PartyResponse) {
         try {
             const completed = party.status !== 'Done';
-            await fetchApi(`/api/parties/${party.id}/complete`, {
-                method: 'PATCH',
-                body: JSON.stringify({ completed })
+            await fetchApi(`/api/parties/complete`, {
+                method: 'POST',
+                body: JSON.stringify({ partyId: party.id, completed })
             });
             await fetchParties(party.scheduleId);
             toast.success(completed ? 'Party marked as Done.' : 'Party marked as Planned.');
@@ -174,7 +171,7 @@
 
     async function joinParty(partyId: string, scheduleId: string) {
         try {
-            await fetchApi(`/api/parties/${partyId}/join`, { method: 'POST' });
+            await fetchApi(`/api/parties/join`, { method: 'POST', body: JSON.stringify({ partyId: partyId }) });
             await fetchParties(scheduleId);
             toast.success('Joined the party!');
         } catch {
@@ -185,7 +182,7 @@
 
     async function leaveParty(partyId: string, scheduleId: string) {
         try {
-            await fetchApi(`/api/parties/${partyId}/leave`, { method: 'POST' });
+            await fetchApi(`/api/parties/leave`, { method: 'POST', body: JSON.stringify({ partyId: partyId }) });
             await fetchParties(scheduleId);
             toast.success('Left the party.');
         } catch {
@@ -202,7 +199,7 @@
     async function confirmKickMember() {
         if (!memberToKick) return;
         try {
-            await fetchApi(`/api/groups/${groupId}/members/${memberToKick.id}`, { method: 'DELETE' });
+            await fetchApi(`/api/members/remove`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: memberToKick.id }) });
             await fetchData();
             toast.success(`${memberToKick.username} has been removed from the group.`);
         } catch {
@@ -215,10 +212,7 @@
     async function toggleAuditorRole(member: GroupMemberResponse) {
         const newRole = member.role === 'AUDITOR' ? 'MEMBER' : 'AUDITOR';
         try {
-            await fetchApi(`/api/groups/${groupId}/members/${member.id}/role`, {
-                method: 'PATCH',
-                body: JSON.stringify({ role: newRole })
-            });
+            await fetchApi(`/api/members/role`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: member.id, role: newRole }) });
             await fetchData();
             toast.success(`${member.username} is now ${newRole}.`);
         } catch {
