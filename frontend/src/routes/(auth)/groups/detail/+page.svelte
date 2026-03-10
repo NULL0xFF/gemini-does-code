@@ -685,11 +685,11 @@
                                                                                             <span class="text-[10px] opacity-50 ml-1">il{pm.itemLevel}</span>
                                                                                         {/if}
                                                                                     </div>
-                                                                                    {#if pm.userId === auth.user?.id && party.status !== 'Done'}
+                                                                                    {#if (pm.userId === auth.user?.id || isAdmin) && party.status !== 'Done'}
                                                                                         <button
                                                                                             class="btn btn-ghost btn-xs btn-circle opacity-60 hover:opacity-100 hover:btn-error ml-1"
                                                                                             onclick={() => leaveParty(party.id, pm.characterId, schedule.id)}
-                                                                                            title="Leave with this character"
+                                                                                            title={pm.userId === auth.user?.id ? 'Leave with this character' : 'Remove from party'}
                                                                                         >✕</button>
                                                                                     {/if}
                                                                                 </div>

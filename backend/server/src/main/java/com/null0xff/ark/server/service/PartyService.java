@@ -125,8 +125,14 @@ public class PartyService {
         .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
 
     UUID groupId = party.getSchedule().getGroup().getId();
-    characterRepository.findByIdAndGroupIdAndUserId(characterId, groupId, userId)
-        .orElseThrow(() -> new ResourceNotFoundException("Character not found in this group", characterId));
+    GroupMember requester = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+        .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
+
+    boolean isAdmin = requester.getRole() == GroupRole.MANAGER || requester.getRole() == GroupRole.AUDITOR;
+    if (!isAdmin) {
+      characterRepository.findByIdAndGroupIdAndUserId(characterId, groupId, userId)
+          .orElseThrow(() -> new ForbiddenException("You do not own this character", partyId));
+    }
 
     PartyMember slot = partyMemberRepository.findByPartyIdAndCharacterId(partyId, characterId)
         .orElseThrow(() -> new ValidationException("This character is not in the party", partyId));
