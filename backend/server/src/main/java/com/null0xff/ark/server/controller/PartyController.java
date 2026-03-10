@@ -2,6 +2,7 @@ package com.null0xff.ark.server.controller;
 
 import com.null0xff.ark.server.dto.PartyCompleteRequest;
 import com.null0xff.ark.server.dto.PartyJoinRequest;
+import com.null0xff.ark.server.dto.PartyUpdateRequest;
 import com.null0xff.ark.server.service.PartyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -74,6 +75,28 @@ public class PartyController {
       @RequestBody PartyJoinRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
     partyService.leaveParty(request.getPartyId(), request.getCharacterId(), userId);
+    return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Updates a party's title and raid type. Requires {@code MANAGER} or {@code AUDITOR} role.
+   *
+   * @param jwt     the caller's JWT
+   * @param request the update request containing partyId, title, and optionally raidType
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Update Party", description = "Updates a party's title and raid type. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Party updated successfully")
+  @ApiResponse(responseCode = "400", description = "Title is blank")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Party not found")
+  @PostMapping("/update")
+  public ResponseEntity<Void> updateParty(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestBody PartyUpdateRequest request) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    partyService.updateParty(request.getPartyId(), userId, request.getTitle(), request.getRaidType());
     return ResponseEntity.ok().build();
   }
 

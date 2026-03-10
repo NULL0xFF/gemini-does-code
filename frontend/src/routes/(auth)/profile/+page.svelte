@@ -30,7 +30,7 @@
         isSaving = true;
         try {
             await fetchApi('/api/users/me/nickname', {
-                method: 'PUT',
+                method: 'POST',
                 body: JSON.stringify({ nickname: customNickname })
             });
             await auth.refreshUser();

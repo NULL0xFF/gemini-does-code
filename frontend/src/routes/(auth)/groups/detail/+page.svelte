@@ -39,6 +39,13 @@
     let joinModalLoading = $state(false);
     let joinModalDialog: HTMLDialogElement;
 
+    // Edit party modal
+    let editModalParty = $state<{ party: PartyResponse; scheduleId: string } | null>(null);
+    let editTitle = $state('');
+    let editRaidType = $state('');
+    let editLoading = $state(false);
+    let editModalDialog: HTMLDialogElement;
+
     let isManager = $derived(members.find(m => m.id === auth.user?.id)?.role === 'MANAGER');
     let isAuditor = $derived(members.find(m => m.id === auth.user?.id)?.role === 'AUDITOR');
     let isAdmin = $derived(isManager || isAuditor);
@@ -202,6 +209,32 @@
         joinModalDialog.close();
         joinModalParty = null;
         joinModalLoading = false;
+    }
+
+    function openEditModal(party: PartyResponse, scheduleId: string) {
+        editModalParty = { party, scheduleId };
+        editTitle = party.title;
+        editRaidType = party.raidType ?? '';
+        editModalDialog.showModal();
+    }
+
+    async function submitEdit() {
+        if (!editModalParty || !editTitle.trim()) return;
+        editLoading = true;
+        const { party, scheduleId } = editModalParty;
+        try {
+            await fetchApi('/api/parties/update', {
+                method: 'POST',
+                body: JSON.stringify({ partyId: party.id, title: editTitle.trim(), raidType: editRaidType.trim() || party.raidType })
+            });
+            await fetchParties(scheduleId);
+            toast.success('Party updated.');
+        } catch {
+            toast.error('Failed to update party.');
+        }
+        editModalDialog.close();
+        editModalParty = null;
+        editLoading = false;
     }
 
     async function joinParty(partyId: string, characterId: string, scheduleId: string) {
@@ -599,6 +632,7 @@
                                                                         </label>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                                         <ul tabindex="0" class="dropdown-content z-30 menu p-2 shadow bg-base-100 rounded-box w-36 border border-base-200">
+                                                                            <li><button onclick={() => openEditModal(party, schedule.id)}>Edit</button></li>
                                                                             <li><button onclick={() => togglePartyStatus(party)}>{party.status === 'Done' ? 'Mark Planned' : 'Mark Done'}</button></li>
                                                                             <li><button class="text-error" onclick={() => requestDeleteParty(party)}>Delete</button></li>
                                                                         </ul>
@@ -851,6 +885,51 @@
                 >
                     {#if joinModalLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
                     Join Party
+                </button>
+            </div>
+        {/if}
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Edit party modal -->
+<dialog bind:this={editModalDialog} class="modal">
+    <div class="modal-box max-w-sm">
+        {#if editModalParty}
+            {@const p = editModalParty.party}
+            <h3 class="font-bold text-lg text-ubuntu mb-1">Edit Party</h3>
+            <p class="text-xs opacity-50 font-mono mb-4">
+                Start: {new Date(p.start).toLocaleString()}
+            </p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Party Title *</label>
+                    <input
+                        type="text"
+                        class="input input-bordered w-full"
+                        bind:value={editTitle}
+                        placeholder="e.g. Valtan Hard Fast Clear"
+                    />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Raid Type (Optional)</label>
+                    <input
+                        type="text"
+                        class="input input-bordered w-full"
+                        bind:value={editRaidType}
+                        placeholder="e.g. Valtan, Vykas, Argos"
+                    />
+                </div>
+            </div>
+            <div class="modal-action mt-5">
+                <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
+                <button
+                    class="btn btn-primary"
+                    disabled={!editTitle.trim() || editLoading}
+                    onclick={submitEdit}
+                >
+                    {#if editLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
+                    Save
                 </button>
             </div>
         {/if}
