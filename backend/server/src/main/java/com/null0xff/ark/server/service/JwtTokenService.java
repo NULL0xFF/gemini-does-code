@@ -61,7 +61,6 @@ public class JwtTokenService {
                 .subject(user.getId().toString())
                 .claim("discordId", user.getDiscordId())
                 .claim("username", user.getUsername())
-                .claim("avatar", user.getAvatar())
                 .build();
 
         SecretKeySpec secretKey = new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");

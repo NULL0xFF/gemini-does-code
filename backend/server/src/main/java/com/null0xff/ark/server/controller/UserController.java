@@ -45,13 +45,13 @@ public class UserController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "discordId", user.getDiscordId(),
-                "username", user.getUsername(),
-                "nickname", user.getNickname() != null ? user.getNickname() : "",
-                "avatar", user.getAvatar()
-        ));
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("id", user.getId());
+        body.put("discordId", user.getDiscordId());
+        body.put("username", user.getUsername());
+        body.put("nickname", user.getNickname() != null ? user.getNickname() : "");
+        body.put("avatar", user.getAvatar());
+        return ResponseEntity.ok(body);
     }
 
     /**
