@@ -150,6 +150,29 @@ public class PartyService {
   }
 
   @Transactional
+  public void updateParty(UUID partyId, UUID managerId, String title, String raidType) {
+    if (title == null || title.isBlank()) {
+      throw new IllegalArgumentException("Party title must not be blank");
+    }
+
+    Party party = partyRepository.findById(partyId)
+        .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
+
+    GroupMember manager = groupMemberRepository.findByGroupIdAndUserId(party.getSchedule().getGroup().getId(), managerId)
+        .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
+
+    if (manager.getRole() != GroupRole.MANAGER && manager.getRole() != GroupRole.AUDITOR) {
+      throw new ForbiddenException("Insufficient permissions to update parties", partyId);
+    }
+
+    party.setTitle(title.strip());
+    if (raidType != null && !raidType.isBlank()) {
+      party.setRaidType(raidType.strip());
+    }
+    partyRepository.save(party);
+  }
+
+  @Transactional
   public void markPartyAsDone(UUID partyId, UUID managerId, boolean completed) {
     Party party = partyRepository.findById(partyId)
         .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
