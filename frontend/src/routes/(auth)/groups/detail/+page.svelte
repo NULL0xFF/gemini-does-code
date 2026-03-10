@@ -52,12 +52,20 @@
     let editLoading = $state(false);
     let editModalDialog: HTMLDialogElement;
 
+    // History modal
+    let archivedSchedules = $state<ScheduleResponse[]>([]);
+    let historyLoading = $state(false);
+    let historyModalDialog: HTMLDialogElement;
+
     let isManager = $derived(members.find(m => m.id === auth.user?.id)?.role === 'MANAGER');
     let isAuditor = $derived(members.find(m => m.id === auth.user?.id)?.role === 'AUDITOR');
     let isAdmin = $derived(isManager || isAuditor);
 
     let deleteScheduleModal: ReturnType<typeof ConfirmationModal>;
     let scheduleToDelete = $state<string | null>(null);
+
+    let archiveScheduleModal: ReturnType<typeof ConfirmationModal>;
+    let scheduleToArchive = $state<string | null>(null);
 
     let deletePartyModal: ReturnType<typeof ConfirmationModal>;
     let partyToDelete = $state<PartyResponse | null>(null);
@@ -164,6 +172,47 @@
             toast.error('Failed to delete schedule.');
         } finally {
             scheduleToDelete = null;
+        }
+    }
+
+    function requestArchiveSchedule(scheduleId: string) {
+        scheduleToArchive = scheduleId;
+        archiveScheduleModal.show();
+    }
+
+    async function confirmArchiveSchedule() {
+        if (!scheduleToArchive) return;
+        try {
+            await fetchApi(`/api/schedules/archive`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleToArchive }) });
+            await fetchData();
+            toast.success('Schedule archived.');
+        } catch {
+            toast.error('Failed to archive schedule.');
+        } finally {
+            scheduleToArchive = null;
+        }
+    }
+
+    async function unarchiveSchedule(scheduleId: string) {
+        try {
+            await fetchApi(`/api/schedules/unarchive`, { method: 'POST', body: JSON.stringify({ scheduleId }) });
+            archivedSchedules = archivedSchedules.filter(s => s.id !== scheduleId);
+            await fetchData();
+            toast.success('Schedule restored to active list.');
+        } catch {
+            toast.error('Failed to unarchive schedule.');
+        }
+    }
+
+    async function openHistoryModal() {
+        historyLoading = true;
+        historyModalDialog.showModal();
+        try {
+            archivedSchedules = await fetchJson<ScheduleResponse[]>(`/api/schedules/archived?groupId=${groupId}`);
+        } catch {
+            toast.error('Failed to load schedule history.');
+        } finally {
+            historyLoading = false;
         }
     }
 
@@ -449,9 +498,12 @@
                 <div class="lg:col-span-2 space-y-6">
                     <div class="flex items-center justify-between">
                         <h3 class="text-2xl font-bold text-ubuntu">Schedules</h3>
-                        {#if isAdmin}
-                            <a href="{base}/groups/schedules/create?id={groupId}" class="btn btn-sm btn-secondary">New Schedule</a>
-                        {/if}
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-ghost" onclick={openHistoryModal}>History</button>
+                            {#if isAdmin}
+                                <a href="{base}/groups/schedules/create?id={groupId}" class="btn btn-sm btn-secondary">New Schedule</a>
+                            {/if}
+                        </div>
                     </div>
 
                     {#if schedules.length === 0}
@@ -488,6 +540,7 @@
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <ul tabindex="0" class="dropdown-content z-10 menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
                                                         <li><button onclick={() => openRenameModal(schedule)}>Rename</button></li>
+                                                        <li><button onclick={() => requestArchiveSchedule(schedule.id)}>Archive</button></li>
                                                         <li><button class="text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
                                                     </ul>
                                                 </div>
@@ -982,6 +1035,55 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<!-- Schedule history modal -->
+<dialog bind:this={historyModalDialog} class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-bold text-lg text-ubuntu mb-4">Schedule History</h3>
+        {#if historyLoading}
+            <div class="flex justify-center py-8">
+                <span class="loading loading-spinner loading-md text-primary"></span>
+            </div>
+        {:else if archivedSchedules.length === 0}
+            <p class="text-center opacity-60 py-8">No archived schedules.</p>
+        {:else}
+            <ul class="space-y-2">
+                {#each archivedSchedules as s}
+                    <li class="flex items-center gap-2 p-2 rounded-lg border border-base-200">
+                        <a
+                            href="{base}/schedules/view?id={s.id}"
+                            class="flex flex-col gap-0.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                            onclick={() => historyModalDialog.close()}
+                        >
+                            <span class="font-semibold text-ubuntu truncate">{s.title}</span>
+                            <span class="text-xs opacity-60 font-mono">{new Date(s.start).toLocaleString()} — {new Date(s.end).toLocaleString()}</span>
+                        </a>
+                        {#if isAdmin}
+                            <button
+                                class="btn btn-xs btn-outline shrink-0"
+                                onclick={() => unarchiveSchedule(s.id)}
+                            >Restore</button>
+                        {/if}
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+        <div class="modal-action mt-4">
+            <form method="dialog"><button class="btn btn-ghost">Close</button></form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<ConfirmationModal
+    bind:this={archiveScheduleModal}
+    id="archive-schedule-modal"
+    title="Archive Schedule"
+    message="Archive this schedule? It will be hidden from the active list but can be viewed in History and restored at any time."
+    confirmText="Archive"
+    type="warning"
+    onConfirm={confirmArchiveSchedule}
+/>
 
 <ConfirmationModal
     bind:this={deleteScheduleModal}

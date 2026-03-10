@@ -50,9 +50,39 @@ public class ScheduleService {
     public List<ScheduleResponse> getGroupSchedules(UUID groupId, UUID userId) {
         authorizationHelper.requireMembership(groupId, userId);
 
-        return scheduleRepository.findByGroupIdOrderByStartTimeAsc(groupId).stream()
+        return scheduleRepository.findByGroupIdAndArchivedFalseOrderByStartTimeAsc(groupId).stream()
                 .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime(), s.getGroup().getId()))
                 .collect(Collectors.toList());
+    }
+
+    public List<ScheduleResponse> getArchivedSchedules(UUID groupId, UUID userId) {
+        authorizationHelper.requireMembership(groupId, userId);
+
+        return scheduleRepository.findByGroupIdAndArchivedTrueOrderByStartTimeDesc(groupId).stream()
+                .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime(), s.getGroup().getId()))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void archiveSchedule(UUID scheduleId, UUID userId) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
+
+        authorizationHelper.requireRole(schedule.getGroup().getId(), userId, GroupRole.MANAGER, GroupRole.AUDITOR);
+
+        schedule.setArchived(true);
+        scheduleRepository.save(schedule);
+    }
+
+    @Transactional
+    public void unarchiveSchedule(UUID scheduleId, UUID userId) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
+
+        authorizationHelper.requireRole(schedule.getGroup().getId(), userId, GroupRole.MANAGER, GroupRole.AUDITOR);
+
+        schedule.setArchived(false);
+        scheduleRepository.save(schedule);
     }
 
     public ScheduleResponse getSchedule(UUID scheduleId, UUID userId) {
