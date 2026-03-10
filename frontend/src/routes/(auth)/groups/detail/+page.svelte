@@ -197,10 +197,11 @@
         if (!joinModalParty || !joinModalCharId) return;
         joinModalLoading = true;
         const { party, scheduleId } = joinModalParty;
+        const charId = joinModalCharId;
+        await joinParty(party.id, charId, scheduleId);
         joinModalDialog.close();
         joinModalParty = null;
         joinModalLoading = false;
-        await joinParty(party.id, joinModalCharId, scheduleId);
     }
 
     async function joinParty(partyId: string, characterId: string, scheduleId: string) {

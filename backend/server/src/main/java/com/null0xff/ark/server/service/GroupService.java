@@ -38,6 +38,9 @@ public class GroupService {
         group.setName(name);
         group.setDescription(description);
         if (maxPartiesPerCharacter != null) {
+            if (maxPartiesPerCharacter < 1 || maxPartiesPerCharacter > 10) {
+                throw new IllegalArgumentException("maxPartiesPerCharacter must be between 1 and 10");
+            }
             group.setMaxPartiesPerCharacter(maxPartiesPerCharacter);
         }
         groupRepository.save(group);

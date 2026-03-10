@@ -84,6 +84,8 @@ public class PartyResponse {
       this.status = "Done";
     } else if (start != null) {
       this.status = Instant.now().isAfter(start) ? "On-going" : "Planned";
+    } else {
+      this.status = "Planned";
     }
   }
 }

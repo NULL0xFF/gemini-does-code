@@ -77,10 +77,14 @@ public class CharacterService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> new ResourceNotFoundException("User not found", userId));
 
+    if (request.getName() == null || request.getName().isBlank()) {
+      throw new IllegalArgumentException("Character name must not be blank");
+    }
+
     GroupCharacter character = new GroupCharacter();
     character.setGroup(group);
     character.setUser(user);
-    character.setName(request.getName());
+    character.setName(request.getName().strip());
     character.setCharacterClass(request.getCharacterClass());
     character.setItemLevel(request.getItemLevel());
     characterRepository.save(character);
@@ -103,7 +107,10 @@ public class CharacterService {
         .findByIdAndGroupIdAndUserId(request.getCharacterId(), request.getGroupId(), userId)
         .orElseThrow(() -> new ResourceNotFoundException("Character not found", request.getCharacterId()));
 
-    character.setName(request.getName());
+    if (request.getName() == null || request.getName().isBlank()) {
+      throw new IllegalArgumentException("Character name must not be blank");
+    }
+    character.setName(request.getName().strip());
     character.setCharacterClass(request.getCharacterClass());
     character.setItemLevel(request.getItemLevel());
     characterRepository.save(character);

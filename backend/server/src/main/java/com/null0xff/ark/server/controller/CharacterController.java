@@ -133,6 +133,9 @@ public class CharacterController {
     UUID userId = UUID.fromString(jwt.getSubject());
     UUID groupId = payload.get("groupId");
     UUID characterId = payload.get("characterId");
+    if (groupId == null || characterId == null) {
+      return ResponseEntity.badRequest().build();
+    }
     characterService.deleteCharacter(groupId, characterId, userId);
     return ResponseEntity.ok().build();
   }
