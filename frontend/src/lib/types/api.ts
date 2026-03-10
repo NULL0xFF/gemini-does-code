@@ -12,6 +12,7 @@ export interface GroupResponse {
     id: string;
     name: string;
     description: string | null;
+    maxPartiesPerCharacter: number;
 }
 
 export interface GroupMemberResponse {
@@ -26,6 +27,7 @@ export type ScheduleStatus = 'ACTIVE' | 'PLANNED' | 'PAST';
 
 export interface ScheduleResponse {
     id: string;
+    groupId: string;
     title: string;
     start: string;
     end: string;
@@ -33,6 +35,14 @@ export interface ScheduleResponse {
 }
 
 export type PartyStatus = 'Planned' | 'On-going' | 'Done';
+
+export interface PartyMemberResponse {
+    characterId: string;
+    characterName: string;
+    characterClass: string | null;
+    itemLevel: number | null;
+    userId: string;
+}
 
 export interface PartyResponse {
     id: string;
@@ -43,7 +53,15 @@ export interface PartyResponse {
     max: number;
     status: PartyStatus;
     start: string;
-    joinedMembers: string[];
+    joinedMembers: PartyMemberResponse[];
+}
+
+export interface CharacterResponse {
+    id: string;
+    userId: string;
+    name: string;
+    characterClass: string | null;
+    itemLevel: number | null;
 }
 
 export interface InviteCodeResponse {

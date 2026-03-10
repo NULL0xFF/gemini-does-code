@@ -42,6 +42,12 @@ public class Group {
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ScheduleInstance> schedules = new ArrayList<>();
 
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<GroupCharacter> characters = new ArrayList<>();
+
+    @Column(name = "max_parties_per_character", nullable = false)
+    private Integer maxPartiesPerCharacter = 3;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = Instant.now();

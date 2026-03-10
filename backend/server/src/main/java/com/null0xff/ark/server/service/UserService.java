@@ -38,7 +38,7 @@ public class UserService {
         return groupMemberRepository.findByUserId(userId).stream()
                 .map(membership -> {
                     Group group = membership.getGroup();
-                    return new GroupResponse(group.getId(), group.getName(), group.getDescription());
+                    return new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getMaxPartiesPerCharacter());
                 })
                 .collect(Collectors.toList());
     }

@@ -6,9 +6,9 @@ import com.null0xff.ark.server.enums.GroupRole;
 import com.null0xff.ark.server.exception.ForbiddenException;
 import com.null0xff.ark.server.exception.ResourceNotFoundException;
 import com.null0xff.ark.server.exception.ValidationException;
+import com.null0xff.ark.server.repository.GroupCharacterRepository;
 import com.null0xff.ark.server.repository.GroupMemberRepository;
 import com.null0xff.ark.server.repository.MemberAvailabilityRepository;
-import com.null0xff.ark.server.repository.PartyMemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
 
 /**
  * Service for managing group roster operations.
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 public class MemberService {
 
     private final GroupMemberRepository groupMemberRepository;
-    private final PartyMemberRepository partyMemberRepository;
+    private final GroupCharacterRepository characterRepository;
     private final MemberAvailabilityRepository memberAvailabilityRepository;
     private final AuthorizationHelper authorizationHelper;
 
@@ -67,7 +68,7 @@ public class MemberService {
             }
         }
 
-        partyMemberRepository.deleteByUserIdAndGroupId(targetUserId, groupId);
+        characterRepository.deleteByUserIdAndGroupId(targetUserId, groupId);
         memberAvailabilityRepository.deleteByUserIdAndGroupId(targetUserId, groupId);
         groupMemberRepository.delete(target);
     }

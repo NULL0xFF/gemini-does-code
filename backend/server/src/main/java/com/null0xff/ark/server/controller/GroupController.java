@@ -12,22 +12,21 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * Controller for core group CRUD operations.
  *
- * <p>All endpoints require a valid JWT. Mutation endpoints ({@code PUT}, {@code DELETE})
+ * <p>All endpoints require a valid JWT. Mutation endpoints
  * additionally require the caller to hold the {@code MANAGER} role in the target group.
  */
 @RestController
@@ -70,7 +69,7 @@ public class GroupController {
       @RequestBody GroupRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
     Group group = userService.createGroup(userId, request.getName(), request.getDescription());
-    return ResponseEntity.ok(new GroupResponse(group.getId(), group.getName(), group.getDescription()));
+    return ResponseEntity.ok(new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getMaxPartiesPerCharacter()));
   }
 
   /**
@@ -85,10 +84,10 @@ public class GroupController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller is not a member of the group")
   @ApiResponse(responseCode = "404", description = "Group not found")
-  @GetMapping("/{groupId}")
+  @GetMapping("/detail")
   public ResponseEntity<GroupResponse> getGroupDetails(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId) {
+      @RequestParam UUID groupId) {
     UUID userId = UUID.fromString(jwt.getSubject());
     return ResponseEntity.ok(groupService.getGroupDetails(groupId, userId));
   }
@@ -97,8 +96,7 @@ public class GroupController {
    * Updates the group's name and description. Requires {@code MANAGER} role.
    *
    * @param jwt     the caller's JWT
-   * @param groupId the group's unique identifier
-   * @param request the updated name and description
+   * @param request the updated name, description, and target groupId
    * @return 200 OK on success
    */
   @Operation(summary = "Update Group Settings", description = "Updates group name and description. Requires MANAGER role.")
@@ -106,13 +104,12 @@ public class GroupController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller does not hold the MANAGER role")
   @ApiResponse(responseCode = "404", description = "Group not found")
-  @PutMapping("/{groupId}")
+  @PostMapping("/update")
   public ResponseEntity<Void> updateGroup(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId,
       @RequestBody GroupRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    groupService.updateGroup(groupId, userId, request.getName(), request.getDescription());
+    groupService.updateGroup(request.getGroupId(), userId, request.getName(), request.getDescription(), request.getMaxPartiesPerCharacter());
     return ResponseEntity.ok().build();
   }
 
@@ -120,7 +117,7 @@ public class GroupController {
    * Permanently deletes the group and all associated data. Requires {@code MANAGER} role.
    *
    * @param jwt     the caller's JWT
-   * @param groupId the group's unique identifier
+   * @param payload the request containing groupId
    * @return 200 OK on success
    */
   @Operation(summary = "Delete Group", description = "Permanently deletes the group and all associated data. Requires MANAGER role.")
@@ -128,11 +125,12 @@ public class GroupController {
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
   @ApiResponse(responseCode = "403", description = "Caller does not hold the MANAGER role")
   @ApiResponse(responseCode = "404", description = "Group not found")
-  @DeleteMapping("/{groupId}")
+  @PostMapping("/delete")
   public ResponseEntity<Void> deleteGroup(
       @AuthenticationPrincipal Jwt jwt,
-      @PathVariable UUID groupId) {
+      @RequestBody Map<String, UUID> payload) {
     UUID userId = UUID.fromString(jwt.getSubject());
+    UUID groupId = payload.get("groupId");
     groupService.deleteGroup(groupId, userId);
     return ResponseEntity.ok().build();
   }

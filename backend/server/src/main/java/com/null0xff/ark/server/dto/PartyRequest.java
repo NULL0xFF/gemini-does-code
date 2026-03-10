@@ -16,6 +16,8 @@ import java.time.Instant;
 public class PartyRequest {
 
     @Schema(description = "Title of the party")
+    private java.util.UUID scheduleId;
+    @io.swagger.v3.oas.annotations.media.Schema(description = "Title of the party")
     private String title;
 
     @Schema(description = "Type of raid")

@@ -27,16 +27,22 @@ public class GroupService {
 
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found", groupId));
-        return new GroupResponse(group.getId(), group.getName(), group.getDescription());
+        return new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getMaxPartiesPerCharacter());
     }
 
     @Transactional
-    public void updateGroup(UUID groupId, UUID managerId, String name, String description) {
+    public void updateGroup(UUID groupId, UUID managerId, String name, String description, Integer maxPartiesPerCharacter) {
         GroupMember manager = authorizationHelper.requireRole(groupId, managerId, GroupRole.MANAGER);
 
         Group group = manager.getGroup();
         group.setName(name);
         group.setDescription(description);
+        if (maxPartiesPerCharacter != null) {
+            if (maxPartiesPerCharacter < 1 || maxPartiesPerCharacter > 10) {
+                throw new IllegalArgumentException("maxPartiesPerCharacter must be between 1 and 10");
+            }
+            group.setMaxPartiesPerCharacter(maxPartiesPerCharacter);
+        }
         groupRepository.save(group);
     }
 

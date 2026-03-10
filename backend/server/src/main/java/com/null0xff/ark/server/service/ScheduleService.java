@@ -44,14 +44,14 @@ public class ScheduleService {
         schedule.setEndTime(end);
         scheduleRepository.save(schedule);
 
-        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
+        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime(), schedule.getGroup().getId());
     }
 
     public List<ScheduleResponse> getGroupSchedules(UUID groupId, UUID userId) {
         authorizationHelper.requireMembership(groupId, userId);
 
         return scheduleRepository.findByGroupIdOrderByStartTimeAsc(groupId).stream()
-                .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime()))
+                .map(s -> new ScheduleResponse(s.getId(), s.getTitle(), s.getStartTime(), s.getEndTime(), s.getGroup().getId()))
                 .collect(Collectors.toList());
     }
 
@@ -61,7 +61,7 @@ public class ScheduleService {
 
         authorizationHelper.requireMembership(schedule.getGroup().getId(), userId);
 
-        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime());
+        return new ScheduleResponse(schedule.getId(), schedule.getTitle(), schedule.getStartTime(), schedule.getEndTime(), schedule.getGroup().getId());
     }
 
     @Transactional

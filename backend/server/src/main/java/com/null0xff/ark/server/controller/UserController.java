@@ -45,13 +45,13 @@ public class UserController {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "discordId", user.getDiscordId(),
-                "username", user.getUsername(),
-                "nickname", user.getNickname() != null ? user.getNickname() : "",
-                "avatar", user.getAvatar()
-        ));
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("id", user.getId());
+        body.put("discordId", user.getDiscordId());
+        body.put("username", user.getUsername());
+        body.put("nickname", user.getNickname());
+        body.put("avatar", user.getAvatar());
+        return ResponseEntity.ok(body);
     }
 
     /**
@@ -63,7 +63,7 @@ public class UserController {
      */
     @Operation(summary = "Update Nickname", description = "Sets a custom display name for the user.")
     @ApiResponse(responseCode = "200", description = "Nickname updated successfully")
-    @PutMapping("/me/nickname")
+    @PostMapping("/me/nickname")
     public ResponseEntity<Void> updateNickname(@AuthenticationPrincipal Jwt jwt, @RequestBody NicknameRequest request) {
         UUID userId = UUID.fromString(jwt.getSubject());
         userService.updateNickname(userId, request.getNickname());
@@ -78,7 +78,7 @@ public class UserController {
      */
     @Operation(summary = "Delete Account", description = "Permanently deletes the user's account and all associated data.")
     @ApiResponse(responseCode = "200", description = "Account deleted successfully")
-    @DeleteMapping("/me")
+    @PostMapping("/me/delete")
     public ResponseEntity<Void> deleteAccount(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
         userService.deleteAccount(userId);
