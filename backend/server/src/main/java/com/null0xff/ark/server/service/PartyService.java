@@ -70,7 +70,7 @@ public class PartyService {
     groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
         .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
-    return partyRepository.findByScheduleIdOrderByStartTimeAsc(scheduleId).stream().map(party -> {
+    return partyRepository.findByScheduleIdOrderByStartTimeAscTitleAsc(scheduleId).stream().map(party -> {
       List<PartyMember> slots = partyMemberRepository.findByPartyId(party.getId());
       List<PartyMemberResponse> memberResponses = slots.stream()
           .map(pm -> new PartyMemberResponse(

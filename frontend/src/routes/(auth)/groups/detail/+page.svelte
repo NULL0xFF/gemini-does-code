@@ -39,6 +39,12 @@
     let joinModalLoading = $state(false);
     let joinModalDialog: HTMLDialogElement;
 
+    // Rename schedule modal
+    let renameModalSchedule = $state<ScheduleResponse | null>(null);
+    let renameTitle = $state('');
+    let renameLoading = $state(false);
+    let renameModalDialog: HTMLDialogElement;
+
     // Edit party modal
     let editModalParty = $state<{ party: PartyResponse; scheduleId: string } | null>(null);
     let editTitle = $state('');
@@ -121,17 +127,26 @@
         selectedCell = null;
     }
 
-    async function renameSchedule(scheduleId: string, oldTitle: string) {
-        const schedule = schedules.find(s => s.id === scheduleId);
-        const newTitle = prompt(`Enter new title for "${oldTitle}":`, oldTitle);
-        if (!newTitle || newTitle === oldTitle || !schedule) return;
+    function openRenameModal(schedule: ScheduleResponse) {
+        renameModalSchedule = schedule;
+        renameTitle = schedule.title;
+        renameModalDialog.showModal();
+    }
+
+    async function submitRename() {
+        if (!renameModalSchedule || !renameTitle.trim()) return;
+        renameLoading = true;
+        const s = renameModalSchedule;
         try {
-            await fetchApi(`/api/schedules/update`, { method: 'POST', body: JSON.stringify({ scheduleId, title: newTitle, startTime: schedule.start, endTime: schedule.end }) });
+            await fetchApi(`/api/schedules/update`, { method: 'POST', body: JSON.stringify({ scheduleId: s.id, title: renameTitle.trim(), startTime: s.start, endTime: s.end }) });
             await fetchData();
             toast.success('Schedule renamed.');
         } catch {
             toast.error('Failed to rename schedule.');
         }
+        renameModalDialog.close();
+        renameModalSchedule = null;
+        renameLoading = false;
     }
 
     function requestDeleteSchedule(scheduleId: string) {
@@ -472,7 +487,7 @@
                                                     </label>
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <ul tabindex="0" class="dropdown-content z-10 menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
-                                                        <li><button onclick={() => renameSchedule(schedule.id, schedule.title)}>Rename</button></li>
+                                                        <li><button onclick={() => openRenameModal(schedule)}>Rename</button></li>
                                                         <li><button class="text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
                                                     </ul>
                                                 </div>
@@ -885,6 +900,37 @@
                 >
                     {#if joinModalLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
                     Join Party
+                </button>
+            </div>
+        {/if}
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Rename schedule modal -->
+<dialog bind:this={renameModalDialog} class="modal">
+    <div class="modal-box max-w-sm">
+        {#if renameModalSchedule}
+            <h3 class="font-bold text-lg text-ubuntu mb-4">Rename Schedule</h3>
+            <div>
+                <label class="block text-xs font-bold opacity-60 uppercase tracking-wider mb-1">Schedule Title *</label>
+                <input
+                    type="text"
+                    class="input input-bordered w-full"
+                    bind:value={renameTitle}
+                    placeholder="e.g. March Week 1 Reset"
+                    onkeydown={(e) => e.key === 'Enter' && submitRename()}
+                />
+            </div>
+            <div class="modal-action mt-5">
+                <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
+                <button
+                    class="btn btn-primary"
+                    disabled={!renameTitle.trim() || renameTitle.trim() === renameModalSchedule.title || renameLoading}
+                    onclick={submitRename}
+                >
+                    {#if renameLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
+                    Rename
                 </button>
             </div>
         {/if}
