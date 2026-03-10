@@ -70,7 +70,7 @@ public class PartyService {
     groupMemberRepository.findByGroupIdAndUserId(schedule.getGroup().getId(), userId)
         .orElseThrow(() -> new ForbiddenException("Access denied", scheduleId));
 
-    return partyRepository.findByScheduleIdOrderByStartTimeAsc(scheduleId).stream().map(party -> {
+    return partyRepository.findByScheduleIdOrderByStartTimeAscTitleAsc(scheduleId).stream().map(party -> {
       List<PartyMember> slots = partyMemberRepository.findByPartyId(party.getId());
       List<PartyMemberResponse> memberResponses = slots.stream()
           .map(pm -> new PartyMemberResponse(
@@ -125,8 +125,14 @@ public class PartyService {
         .orElseThrow(() -> new ResourceNotFoundException("Party not found", partyId));
 
     UUID groupId = party.getSchedule().getGroup().getId();
-    characterRepository.findByIdAndGroupIdAndUserId(characterId, groupId, userId)
-        .orElseThrow(() -> new ResourceNotFoundException("Character not found in this group", characterId));
+    GroupMember requester = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+        .orElseThrow(() -> new ForbiddenException("Access denied", partyId));
+
+    boolean isAdmin = requester.getRole() == GroupRole.MANAGER || requester.getRole() == GroupRole.AUDITOR;
+    if (!isAdmin) {
+      characterRepository.findByIdAndGroupIdAndUserId(characterId, groupId, userId)
+          .orElseThrow(() -> new ForbiddenException("You do not own this character", partyId));
+    }
 
     PartyMember slot = partyMemberRepository.findByPartyIdAndCharacterId(partyId, characterId)
         .orElseThrow(() -> new ValidationException("This character is not in the party", partyId));

@@ -17,10 +17,10 @@ import java.util.UUID;
 public interface PartyRepository extends JpaRepository<Party, UUID> {
 
   /**
-   * Returns all parties for the given schedule, ordered by start time ascending.
+   * Returns all parties for the given schedule, ordered by start time ascending then title ascending.
    *
    * @param scheduleId the schedule's unique identifier
-   * @return a chronologically sorted list of parties; empty if none have been created
+   * @return a sorted list of parties; empty if none have been created
    */
-  List<Party> findByScheduleIdOrderByStartTimeAsc(UUID scheduleId);
+  List<Party> findByScheduleIdOrderByStartTimeAscTitleAsc(UUID scheduleId);
 }
