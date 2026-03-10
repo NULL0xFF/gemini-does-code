@@ -44,8 +44,8 @@ public class PartyResponse {
   @Schema(description = "ISO-8601 start time of the party", example = "2025-01-15T18:00:00Z")
   private String start;
 
-  @Schema(description = "Display names of users who have joined the party")
-  private List<String> joinedMembers;
+  @Schema(description = "Characters that have joined the party")
+  private List<PartyMemberResponse> joinedMembers;
 
   /**
    * Constructs a {@code PartyResponse}, deriving {@link #status} from the completion flag
@@ -59,7 +59,7 @@ public class PartyResponse {
    * @param max           maximum member capacity
    * @param start         the party start time; may be {@code null}
    * @param isCompleted   {@code true} if the party has been manually marked as done
-   * @param joinedMembers display names of current party members
+   * @param joinedMembers characters currently occupying slots in this party
    */
   public PartyResponse(
       UUID id,
@@ -70,7 +70,7 @@ public class PartyResponse {
       Integer max,
       Instant start,
       Boolean isCompleted,
-      List<String> joinedMembers) {
+      List<PartyMemberResponse> joinedMembers) {
     this.id = id;
     this.scheduleId = scheduleId;
     this.title = title;

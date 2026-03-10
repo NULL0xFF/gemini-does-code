@@ -11,6 +11,7 @@
     let groupId = $derived($page.url.searchParams.get('id') ?? '');
     let groupName = $state('');
     let description = $state('');
+    let maxPartiesPerCharacter = $state(3);
     let isLoading = $state(true);
     let isSaving = $state(false);
     let error = $state('');
@@ -32,6 +33,7 @@
             ]);
             groupName = group.name;
             description = group.description || '';
+            maxPartiesPerCharacter = group.maxPartiesPerCharacter ?? 3;
             members = memberList;
         } catch (err) {
             if (!(err instanceof ApiError && err.status === 401)) {
@@ -49,7 +51,7 @@
         try {
             await fetchApi(`/api/groups/update`, {
                 method: 'POST',
-                body: JSON.stringify({ groupId: groupId,  name: groupName, description  })
+                body: JSON.stringify({ groupId, name: groupName, description, maxPartiesPerCharacter })
             });
             toast.success('Group settings updated!');
             window.location.href = `${base}/groups/detail?id=${groupId}`;
@@ -131,6 +133,23 @@
                                 />
                             {:else}
                                 <p class="text-xl font-bold font-ubuntu px-1">{groupName}</p>
+                            {/if}
+                        </div>
+
+                        <div>
+                            <label for="max-parties" class="block text-sm font-bold text-ubuntu mb-2">Party Slots per Character per Schedule</label>
+                            {#if isManager}
+                                <input
+                                    id="max-parties"
+                                    type="number"
+                                    class="input input-bordered w-full font-neo focus:ring-primary"
+                                    bind:value={maxPartiesPerCharacter}
+                                    min="1"
+                                    max="10"
+                                />
+                                <p class="text-xs opacity-50 mt-1">How many parties a character can join within a single schedule (default: 3).</p>
+                            {:else}
+                                <p class="text-xl font-bold font-ubuntu px-1">{maxPartiesPerCharacter}</p>
                             {/if}
                         </div>
 

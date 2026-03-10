@@ -69,7 +69,7 @@ public class GroupController {
       @RequestBody GroupRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
     Group group = userService.createGroup(userId, request.getName(), request.getDescription());
-    return ResponseEntity.ok(new GroupResponse(group.getId(), group.getName(), group.getDescription()));
+    return ResponseEntity.ok(new GroupResponse(group.getId(), group.getName(), group.getDescription(), group.getMaxPartiesPerCharacter()));
   }
 
   /**
@@ -109,7 +109,7 @@ public class GroupController {
       @AuthenticationPrincipal Jwt jwt,
       @RequestBody GroupRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    groupService.updateGroup(request.getGroupId(), userId, request.getName(), request.getDescription());
+    groupService.updateGroup(request.getGroupId(), userId, request.getName(), request.getDescription(), request.getMaxPartiesPerCharacter());
     return ResponseEntity.ok().build();
   }
 

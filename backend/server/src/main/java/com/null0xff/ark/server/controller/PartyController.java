@@ -1,6 +1,7 @@
 package com.null0xff.ark.server.controller;
 
 import com.null0xff.ark.server.dto.PartyCompleteRequest;
+import com.null0xff.ark.server.dto.PartyJoinRequest;
 import com.null0xff.ark.server.service.PartyService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -9,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,8 +21,8 @@ import java.util.UUID;
 /**
  * Controller for individual party interactions.
  *
- * <p>Join and leave are open to any group member. Delete and completion-status updates
- * require the {@code MANAGER} or {@code AUDITOR} role.
+ * <p>Join and leave are open to any group member using one of their registered characters.
+ * Delete and completion-status updates require the {@code MANAGER} or {@code AUDITOR} role.
  */
 @RestController
 @RequiredArgsConstructor
@@ -33,47 +33,47 @@ public class PartyController {
   private final PartyService partyService;
 
   /**
-   * Joins a party if it is not full. Open to any group member.
+   * Joins a party with a specific registered character, subject to capacity and per-schedule
+   * party limits.
    *
    * @param jwt     the caller's JWT
-   * @param payload the request containing partyId
+   * @param request the request containing partyId and characterId
    * @return 200 OK on success
    */
-  @Operation(summary = "Join Party", description = "Joins a party if it is not already full.")
+  @Operation(summary = "Join Party", description = "Joins a party using a registered character, subject to capacity and per-schedule slot limits.")
   @ApiResponse(responseCode = "200", description = "Joined the party successfully")
-  @ApiResponse(responseCode = "400", description = "Party is full or user is already a member")
+  @ApiResponse(responseCode = "400", description = "Party is full, character already joined, or per-schedule limit reached")
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
-  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group")
-  @ApiResponse(responseCode = "404", description = "Party not found")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the owning group or does not own the character")
+  @ApiResponse(responseCode = "404", description = "Party or character not found")
   @PostMapping("/join")
   public ResponseEntity<Void> joinParty(
       @AuthenticationPrincipal Jwt jwt,
-      @RequestBody Map<String, UUID> payload) {
+      @RequestBody PartyJoinRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    UUID partyId = payload.get("partyId");
-    partyService.joinParty(partyId, userId);
+    partyService.joinParty(request.getPartyId(), request.getCharacterId(), userId);
     return ResponseEntity.ok().build();
   }
 
   /**
-   * Leaves a party the caller has previously joined.
+   * Removes a character from a party the caller has previously joined.
    *
    * @param jwt     the caller's JWT
-   * @param payload the request containing partyId
+   * @param request the request containing partyId and characterId
    * @return 200 OK on success
    */
-  @Operation(summary = "Leave Party", description = "Removes the caller from a party they have joined.")
+  @Operation(summary = "Leave Party", description = "Removes a character from a party.")
   @ApiResponse(responseCode = "200", description = "Left the party successfully")
+  @ApiResponse(responseCode = "400", description = "Character is not in the party")
   @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
-  @ApiResponse(responseCode = "403", description = "Caller is not a member of the party")
-  @ApiResponse(responseCode = "404", description = "Party not found")
+  @ApiResponse(responseCode = "403", description = "Caller does not own the character")
+  @ApiResponse(responseCode = "404", description = "Party or character not found")
   @PostMapping("/leave")
   public ResponseEntity<Void> leaveParty(
       @AuthenticationPrincipal Jwt jwt,
-      @RequestBody Map<String, UUID> payload) {
+      @RequestBody PartyJoinRequest request) {
     UUID userId = UUID.fromString(jwt.getSubject());
-    UUID partyId = payload.get("partyId");
-    partyService.leaveParty(partyId, userId);
+    partyService.leaveParty(request.getPartyId(), request.getCharacterId(), userId);
     return ResponseEntity.ok().build();
   }
 

@@ -6,7 +6,7 @@
     import { fetchApi, fetchJson, ApiError } from '$lib/api';
     import { auth, getAvatarUrl } from '$lib/stores/auth.svelte';
     import { toast } from '$lib/stores/toast.svelte';
-    import type { GroupResponse, GroupMemberResponse, ScheduleResponse, PartyResponse, AvailabilityResponse } from '$lib/types/api';
+    import type { GroupResponse, GroupMemberResponse, ScheduleResponse, PartyResponse, AvailabilityResponse, CharacterResponse } from '$lib/types/api';
 
     let groupId = $derived($page.url.searchParams.get('id') ?? '');
     let group = $state<GroupResponse | null>(null);
@@ -15,6 +15,7 @@
     let parties = $state<PartyResponse[]>([]);
     let rawAvailability = $state<AvailabilityResponse[]>([]);
     let heatmapData = $state<number[][] | null>(null);
+    let myCharacters = $state<CharacterResponse[]>([]);
 
     let isLoading = $state(true);
     let error = $state('');
@@ -23,6 +24,19 @@
     let expandedPartyId = $state<string | null>(null);
     let loadingPartyId = $state<string | null>(null);
     let selectedCell = $state<{ d: number; t: number; members: string[] } | null>(null);
+
+    // Character form state
+    let showCharacterForm = $state(false);
+    let editingCharacter = $state<CharacterResponse | null>(null);
+    let charName = $state('');
+    let charClass = $state('');
+    let charIlvl = $state('');
+    let charFormLoading = $state(false);
+
+    // Character picker
+    let joinTargetPartyId = $state<string | null>(null);
+    let joinTargetScheduleId = $state<string | null>(null);
+    let characterPickerDialog: HTMLDialogElement;
 
     let isManager = $derived(members.find(m => m.id === auth.user?.id)?.role === 'MANAGER');
     let isAuditor = $derived(members.find(m => m.id === auth.user?.id)?.role === 'AUDITOR');
@@ -39,14 +53,16 @@
 
     async function fetchData() {
         try {
-            const [groupData, memberData, scheduleData] = await Promise.all([
+            const [groupData, memberData, scheduleData, characterData] = await Promise.all([
                 fetchJson<GroupResponse>(`/api/groups/detail?groupId=${groupId}`),
                 fetchJson<GroupMemberResponse[]>(`/api/members?groupId=${groupId}`),
-                fetchJson<ScheduleResponse[]>(`/api/schedules/list?groupId=${groupId}`)
+                fetchJson<ScheduleResponse[]>(`/api/schedules/list?groupId=${groupId}`),
+                fetchJson<CharacterResponse[]>(`/api/characters/me?groupId=${groupId}`)
             ]);
             group = groupData;
             members = memberData;
             schedules = scheduleData;
+            myCharacters = characterData;
             if (schedules.length > 0) {
                 await Promise.all(schedules.map(s => fetchParties(s.id)));
             }
@@ -102,7 +118,7 @@
         const newTitle = prompt(`Enter new title for "${oldTitle}":`, oldTitle);
         if (!newTitle || newTitle === oldTitle || !schedule) return;
         try {
-            await fetchApi(`/api/schedules/update`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleId,  title: newTitle, startTime: schedule.start, endTime: schedule.end  }) });
+            await fetchApi(`/api/schedules/update`, { method: 'POST', body: JSON.stringify({ scheduleId, title: newTitle, startTime: schedule.start, endTime: schedule.end }) });
             await fetchData();
             toast.success('Schedule renamed.');
         } catch {
@@ -158,10 +174,7 @@
     async function togglePartyStatus(party: PartyResponse) {
         try {
             const completed = party.status !== 'Done';
-            await fetchApi(`/api/parties/complete`, {
-                method: 'POST',
-                body: JSON.stringify({ partyId: party.id, completed })
-            });
+            await fetchApi(`/api/parties/complete`, { method: 'POST', body: JSON.stringify({ partyId: party.id, completed }) });
             await fetchParties(party.scheduleId);
             toast.success(completed ? 'Party marked as Done.' : 'Party marked as Planned.');
         } catch {
@@ -169,9 +182,23 @@
         }
     }
 
-    async function joinParty(partyId: string, scheduleId: string) {
+    function initiateJoin(partyId: string, scheduleId: string) {
+        if (myCharacters.length === 0) {
+            toast.error('Register a character in the sidebar before joining a party.');
+            return;
+        }
+        if (myCharacters.length === 1) {
+            joinParty(partyId, myCharacters[0].id, scheduleId);
+        } else {
+            joinTargetPartyId = partyId;
+            joinTargetScheduleId = scheduleId;
+            characterPickerDialog.showModal();
+        }
+    }
+
+    async function joinParty(partyId: string, characterId: string, scheduleId: string) {
         try {
-            await fetchApi(`/api/parties/join`, { method: 'POST', body: JSON.stringify({ partyId: partyId }) });
+            await fetchApi(`/api/parties/join`, { method: 'POST', body: JSON.stringify({ partyId, characterId }) });
             await fetchParties(scheduleId);
             toast.success('Joined the party!');
         } catch {
@@ -180,9 +207,9 @@
         }
     }
 
-    async function leaveParty(partyId: string, scheduleId: string) {
+    async function leaveParty(partyId: string, characterId: string, scheduleId: string) {
         try {
-            await fetchApi(`/api/parties/leave`, { method: 'POST', body: JSON.stringify({ partyId: partyId }) });
+            await fetchApi(`/api/parties/leave`, { method: 'POST', body: JSON.stringify({ partyId, characterId }) });
             await fetchParties(scheduleId);
             toast.success('Left the party.');
         } catch {
@@ -199,7 +226,7 @@
     async function confirmKickMember() {
         if (!memberToKick) return;
         try {
-            await fetchApi(`/api/members/remove`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: memberToKick.id }) });
+            await fetchApi(`/api/members/remove`, { method: 'POST', body: JSON.stringify({ groupId, targetUserId: memberToKick.id }) });
             await fetchData();
             toast.success(`${memberToKick.username} has been removed from the group.`);
         } catch {
@@ -212,7 +239,7 @@
     async function toggleAuditorRole(member: GroupMemberResponse) {
         const newRole = member.role === 'AUDITOR' ? 'MEMBER' : 'AUDITOR';
         try {
-            await fetchApi(`/api/members/role`, { method: 'POST', body: JSON.stringify({ groupId: groupId, targetUserId: member.id, role: newRole }) });
+            await fetchApi(`/api/members/role`, { method: 'POST', body: JSON.stringify({ groupId, targetUserId: member.id, role: newRole }) });
             await fetchData();
             toast.success(`${member.username} is now ${newRole}.`);
         } catch {
@@ -224,6 +251,57 @@
         toast.info(`Notification feature for ${member.username} is planned.`);
     }
 
+    // Character management
+    function openCharacterForm(char: CharacterResponse | null = null) {
+        editingCharacter = char;
+        charName = char?.name ?? '';
+        charClass = char?.characterClass ?? '';
+        charIlvl = char?.itemLevel?.toString() ?? '';
+        showCharacterForm = true;
+    }
+
+    function cancelCharacterForm() {
+        showCharacterForm = false;
+        editingCharacter = null;
+    }
+
+    async function saveCharacter() {
+        if (!charName.trim()) return;
+        charFormLoading = true;
+        try {
+            if (editingCharacter) {
+                await fetchApi('/api/characters/update', {
+                    method: 'POST',
+                    body: JSON.stringify({ groupId, characterId: editingCharacter.id, name: charName.trim(), characterClass: charClass.trim() || null, itemLevel: charIlvl ? parseFloat(charIlvl) : null })
+                });
+                toast.success('Character updated.');
+            } else {
+                await fetchApi('/api/characters/create', {
+                    method: 'POST',
+                    body: JSON.stringify({ groupId, name: charName.trim(), characterClass: charClass.trim() || null, itemLevel: charIlvl ? parseFloat(charIlvl) : null })
+                });
+                toast.success('Character registered.');
+            }
+            myCharacters = await fetchJson<CharacterResponse[]>(`/api/characters/me?groupId=${groupId}`);
+            cancelCharacterForm();
+        } catch {
+            toast.error('Failed to save character.');
+        } finally {
+            charFormLoading = false;
+        }
+    }
+
+    async function deleteCharacter(char: CharacterResponse) {
+        try {
+            await fetchApi('/api/characters/delete', { method: 'POST', body: JSON.stringify({ groupId, characterId: char.id }) });
+            myCharacters = myCharacters.filter(c => c.id !== char.id);
+            toast.success('Character deleted.');
+        } catch {
+            toast.error('Failed to delete character.');
+        }
+    }
+
+    // Heatmap helpers
     function formatDateOffset(dateString: string, offsetDays: number) {
         const d = new Date(dateString);
         d.setDate(d.getDate() + offsetDays);
@@ -477,6 +555,7 @@
                                         {:else}
                                             <div class="space-y-2">
                                                 {#each scheduleParties as party}
+                                                    {@const mySlots = party.joinedMembers.filter(pm => pm.userId === auth.user?.id)}
                                                     <div class="rounded-lg border transition-colors {expandedPartyId === party.id ? 'border-primary bg-base-200' : 'border-base-300 bg-base-200'}">
 
                                                         <!-- Party row header -->
@@ -529,23 +608,38 @@
                                                                     <div>
                                                                         <p class="text-xs font-bold opacity-60 uppercase tracking-wider mb-2">Members</p>
                                                                         <div class="flex flex-wrap gap-2">
-                                                                            {#each party.joinedMembers as member}
-                                                                                <span class="badge badge-neutral">{member}</span>
+                                                                            {#each party.joinedMembers as pm}
+                                                                                <div class="flex items-center gap-1 badge badge-neutral py-3 pr-1 pl-2">
+                                                                                    <div class="text-left leading-tight">
+                                                                                        <span class="font-bold text-xs">{pm.characterName}</span>
+                                                                                        {#if pm.characterClass}
+                                                                                            <span class="text-[10px] opacity-60 ml-1">{pm.characterClass}</span>
+                                                                                        {/if}
+                                                                                        {#if pm.itemLevel}
+                                                                                            <span class="text-[10px] opacity-50 ml-1">il{pm.itemLevel}</span>
+                                                                                        {/if}
+                                                                                    </div>
+                                                                                    {#if pm.userId === auth.user?.id && party.status !== 'Done'}
+                                                                                        <button
+                                                                                            class="btn btn-ghost btn-xs btn-circle opacity-60 hover:opacity-100 hover:btn-error ml-1"
+                                                                                            onclick={() => leaveParty(party.id, pm.characterId, schedule.id)}
+                                                                                            title="Leave with this character"
+                                                                                        >✕</button>
+                                                                                    {/if}
+                                                                                </div>
                                                                             {/each}
                                                                             {#each Array(party.max - party.members) as _}
-                                                                                <span class="badge badge-outline border-dashed opacity-40">Empty Slot</span>
+                                                                                <span class="badge badge-outline border-dashed opacity-40 py-3">Empty Slot</span>
                                                                             {/each}
                                                                         </div>
                                                                     </div>
                                                                 </div>
 
-                                                                {#if party.status !== 'Done'}
+                                                                {#if party.status !== 'Done' && party.members < party.max && mySlots.length < (group?.maxPartiesPerCharacter ?? 3)}
                                                                     <div class="flex justify-end mt-4 pt-3 border-t border-base-200">
-                                                                        {#if party.joinedMembers.includes(auth.user?.nickname || auth.user?.username || '')}
-                                                                            <button class="btn btn-sm btn-error btn-outline" onclick={() => leaveParty(party.id, schedule.id)}>Leave Party</button>
-                                                                        {:else}
-                                                                            <button class="btn btn-sm btn-primary" disabled={party.members >= party.max} onclick={() => joinParty(party.id, schedule.id)}>Join Party</button>
-                                                                        {/if}
+                                                                        <button class="btn btn-sm btn-primary" onclick={() => initiateJoin(party.id, schedule.id)}>
+                                                                            Join Party
+                                                                        </button>
                                                                     </div>
                                                                 {/if}
                                                             </div>
@@ -562,8 +656,68 @@
                     {/if}
                 </div>
 
-                <!-- ── Roster sidebar ──────────────────────────────────── -->
+                <!-- ── Sidebar ─────────────────────────────────────────── -->
                 <div class="space-y-6">
+
+                    <!-- My Characters card -->
+                    <div class="card bg-base-100 shadow-xl">
+                        <div class="card-body p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-bold text-ubuntu">My Characters</h3>
+                                {#if !showCharacterForm}
+                                    <button class="btn btn-xs btn-outline btn-secondary" onclick={() => openCharacterForm()}>+ Add</button>
+                                {/if}
+                            </div>
+
+                            {#if showCharacterForm}
+                                <form class="space-y-3 mb-4 p-3 bg-base-200 rounded-lg" onsubmit={(e) => { e.preventDefault(); saveCharacter(); }}>
+                                    <p class="text-sm font-bold">{editingCharacter ? 'Edit Character' : 'Register Character'}</p>
+                                    <input type="text" class="input input-sm input-bordered w-full" placeholder="Character name*" bind:value={charName} required />
+                                    <input type="text" class="input input-sm input-bordered w-full" placeholder="Class (e.g. Bard)" bind:value={charClass} />
+                                    <input type="number" class="input input-sm input-bordered w-full" placeholder="Item level (e.g. 1620)" bind:value={charIlvl} step="0.01" min="0" />
+                                    <div class="flex gap-2 justify-end">
+                                        <button type="button" class="btn btn-xs btn-ghost" onclick={cancelCharacterForm}>Cancel</button>
+                                        <button type="submit" class="btn btn-xs btn-primary" disabled={charFormLoading}>
+                                            {#if charFormLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
+                                            Save
+                                        </button>
+                                    </div>
+                                </form>
+                            {/if}
+
+                            {#if myCharacters.length === 0 && !showCharacterForm}
+                                <p class="text-sm opacity-50 italic text-center py-4">No characters registered yet.</p>
+                            {:else}
+                                <div class="space-y-2">
+                                    {#each myCharacters as char}
+                                        <div class="flex items-center justify-between gap-2 p-2 rounded-lg bg-base-200">
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-sm truncate">{char.name}</p>
+                                                <p class="text-[11px] opacity-60">
+                                                    {char.characterClass ?? 'Unknown class'}
+                                                    {#if char.itemLevel} · il{char.itemLevel}{/if}
+                                                </p>
+                                            </div>
+                                            <div class="flex gap-1 shrink-0">
+                                                <button class="btn btn-ghost btn-xs btn-circle opacity-60 hover:opacity-100" onclick={() => openCharacterForm(char)} title="Edit">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                                                    </svg>
+                                                </button>
+                                                <button class="btn btn-ghost btn-xs btn-circle opacity-60 hover:opacity-100 hover:text-error" onclick={() => deleteCharacter(char)} title="Delete">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    {/each}
+                                </div>
+                            {/if}
+                        </div>
+                    </div>
+
+                    <!-- Group Roster card -->
                     <div class="card bg-base-100 shadow-xl">
                         <div class="card-body p-6">
                             <h3 class="text-xl font-bold text-ubuntu mb-4">Group Roster</h3>
@@ -606,12 +760,37 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
             </div>
         {/if}
     </div>
 </main>
+
+<!-- Character picker dialog -->
+<dialog bind:this={characterPickerDialog} class="modal">
+    <div class="modal-box max-w-sm">
+        <h3 class="font-bold text-lg mb-4">Select Character</h3>
+        <div class="space-y-2">
+            {#each myCharacters as char}
+                <button
+                    class="btn btn-outline w-full justify-start gap-3 h-auto py-2"
+                    onclick={() => { characterPickerDialog.close(); joinParty(joinTargetPartyId!, char.id, joinTargetScheduleId!); }}
+                >
+                    <div class="text-left">
+                        <p class="font-bold">{char.name}</p>
+                        <p class="text-xs opacity-60">{char.characterClass ?? 'Unknown class'}{char.itemLevel ? ` · il${char.itemLevel}` : ''}</p>
+                    </div>
+                </button>
+            {/each}
+        </div>
+        <div class="modal-action">
+            <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
+        </div>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
 
 <ConfirmationModal
     bind:this={deleteScheduleModal}

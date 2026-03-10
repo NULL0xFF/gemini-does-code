@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+
 import java.util.UUID;
 
 /**
@@ -16,19 +17,15 @@ import java.util.UUID;
 @AllArgsConstructor
 public class GroupResponse {
 
-    @Schema(description = "The unique identifier of the group")
-    private UUID id;
+  @Schema(description = "The unique identifier of the group")
+  private UUID id;
 
-    @Schema(description = "The name of the group")
-    private String name;
+  @Schema(description = "The name of the group")
+  private String name;
 
-    @Schema(description = "The description of the group")
-    private String description;
+  @Schema(description = "The description of the group")
+  private String description;
 
-
-
-
-
-
-
+  @Schema(description = "Maximum number of parties a character may join within a single schedule")
+  private Integer maxPartiesPerCharacter;
 }
