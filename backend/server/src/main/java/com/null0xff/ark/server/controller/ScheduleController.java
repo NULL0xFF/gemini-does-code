@@ -148,6 +148,48 @@ public class ScheduleController {
   }
 
   /**
+   * Archives a schedule, hiding it from the active schedule list. Requires {@code MANAGER} or
+   * {@code AUDITOR} role.
+   *
+   * @param jwt     the caller's JWT
+   * @param payload the request containing scheduleId
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Archive Schedule", description = "Archives a schedule. Archived schedules are excluded from the main list but remain accessible via history. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Schedule archived successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @PostMapping("/api/schedules/archive")
+  public ResponseEntity<Void> archiveSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestBody Map<String, UUID> payload) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    UUID scheduleId = payload.get("scheduleId");
+    scheduleService.archiveSchedule(scheduleId, userId);
+    return ResponseEntity.ok().build();
+  }
+
+  /**
+   * Returns all archived schedules for the given group. Requires membership.
+   *
+   * @param jwt     the caller's JWT
+   * @param groupId the group's unique identifier
+   * @return a reverse-chronological list of archived schedules
+   */
+  @Operation(summary = "List Archived Schedules", description = "Returns all archived schedules for the group, ordered by start time descending. Requires membership.")
+  @ApiResponse(responseCode = "200", description = "Archived schedules retrieved successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller is not a member of the group")
+  @GetMapping("/api/schedules/archived")
+  public ResponseEntity<List<ScheduleResponse>> getArchivedSchedules(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestParam UUID groupId) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    return ResponseEntity.ok(scheduleService.getArchivedSchedules(groupId, userId));
+  }
+
+  /**
    * Overwrites the caller's availability for the given schedule. Requires membership.
    *
    * @param jwt        the caller's JWT

@@ -17,10 +17,18 @@ import java.util.UUID;
 public interface ScheduleRepository extends JpaRepository<ScheduleInstance, UUID> {
 
   /**
-   * Returns all schedules for the given group, ordered by start time ascending.
+   * Returns all non-archived schedules for the given group, ordered by start time ascending.
    *
    * @param groupId the group's unique identifier
-   * @return a chronologically sorted list of schedules; empty if none have been created
+   * @return a chronologically sorted list of active schedules; empty if none exist
    */
-  List<ScheduleInstance> findByGroupIdOrderByStartTimeAsc(UUID groupId);
+  List<ScheduleInstance> findByGroupIdAndArchivedFalseOrderByStartTimeAsc(UUID groupId);
+
+  /**
+   * Returns all archived schedules for the given group, ordered by start time descending.
+   *
+   * @param groupId the group's unique identifier
+   * @return a reverse-chronological list of archived schedules; empty if none exist
+   */
+  List<ScheduleInstance> findByGroupIdAndArchivedTrueOrderByStartTimeDesc(UUID groupId);
 }

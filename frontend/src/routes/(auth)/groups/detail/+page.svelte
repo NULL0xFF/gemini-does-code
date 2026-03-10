@@ -52,6 +52,11 @@
     let editLoading = $state(false);
     let editModalDialog: HTMLDialogElement;
 
+    // History modal
+    let archivedSchedules = $state<ScheduleResponse[]>([]);
+    let historyLoading = $state(false);
+    let historyModalDialog: HTMLDialogElement;
+
     let isManager = $derived(members.find(m => m.id === auth.user?.id)?.role === 'MANAGER');
     let isAuditor = $derived(members.find(m => m.id === auth.user?.id)?.role === 'AUDITOR');
     let isAdmin = $derived(isManager || isAuditor);
@@ -164,6 +169,28 @@
             toast.error('Failed to delete schedule.');
         } finally {
             scheduleToDelete = null;
+        }
+    }
+
+    async function archiveSchedule(scheduleId: string) {
+        try {
+            await fetchApi(`/api/schedules/archive`, { method: 'POST', body: JSON.stringify({ scheduleId }) });
+            await fetchData();
+            toast.success('Schedule archived.');
+        } catch {
+            toast.error('Failed to archive schedule.');
+        }
+    }
+
+    async function openHistoryModal() {
+        historyLoading = true;
+        historyModalDialog.showModal();
+        try {
+            archivedSchedules = await fetchJson<ScheduleResponse[]>(`/api/schedules/archived?groupId=${groupId}`);
+        } catch {
+            toast.error('Failed to load schedule history.');
+        } finally {
+            historyLoading = false;
         }
     }
 
@@ -449,9 +476,12 @@
                 <div class="lg:col-span-2 space-y-6">
                     <div class="flex items-center justify-between">
                         <h3 class="text-2xl font-bold text-ubuntu">Schedules</h3>
-                        {#if isAdmin}
-                            <a href="{base}/groups/schedules/create?id={groupId}" class="btn btn-sm btn-secondary">New Schedule</a>
-                        {/if}
+                        <div class="flex gap-2">
+                            <button class="btn btn-sm btn-ghost" onclick={openHistoryModal}>History</button>
+                            {#if isAdmin}
+                                <a href="{base}/groups/schedules/create?id={groupId}" class="btn btn-sm btn-secondary">New Schedule</a>
+                            {/if}
+                        </div>
                     </div>
 
                     {#if schedules.length === 0}
@@ -488,6 +518,7 @@
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <ul tabindex="0" class="dropdown-content z-10 menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
                                                         <li><button onclick={() => openRenameModal(schedule)}>Rename</button></li>
+                                                        <li><button onclick={() => archiveSchedule(schedule.id)}>Archive</button></li>
                                                         <li><button class="text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
                                                     </ul>
                                                 </div>
@@ -979,6 +1010,39 @@
                 </button>
             </div>
         {/if}
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Schedule history modal -->
+<dialog bind:this={historyModalDialog} class="modal">
+    <div class="modal-box max-w-md">
+        <h3 class="font-bold text-lg text-ubuntu mb-4">Schedule History</h3>
+        {#if historyLoading}
+            <div class="flex justify-center py-8">
+                <span class="loading loading-spinner loading-md text-primary"></span>
+            </div>
+        {:else if archivedSchedules.length === 0}
+            <p class="text-center opacity-60 py-8">No archived schedules.</p>
+        {:else}
+            <ul class="space-y-2">
+                {#each archivedSchedules as s}
+                    <li>
+                        <a
+                            href="{base}/schedules/view?id={s.id}"
+                            class="flex flex-col gap-0.5 p-3 rounded-lg hover:bg-base-200 transition-colors cursor-pointer border border-base-200"
+                            onclick={() => historyModalDialog.close()}
+                        >
+                            <span class="font-semibold text-ubuntu">{s.title}</span>
+                            <span class="text-xs opacity-60 font-mono">{new Date(s.start).toLocaleString()} — {new Date(s.end).toLocaleString()}</span>
+                        </a>
+                    </li>
+                {/each}
+            </ul>
+        {/if}
+        <div class="modal-action mt-4">
+            <form method="dialog"><button class="btn btn-ghost">Close</button></form>
+        </div>
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>

@@ -44,6 +44,9 @@ public class ScheduleInstance {
     @Column(name = "created_at", updatable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
+    private boolean archived = false;
+
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MemberAvailability> availabilities = new ArrayList<>();
 
