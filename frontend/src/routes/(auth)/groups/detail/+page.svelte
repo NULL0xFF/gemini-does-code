@@ -409,23 +409,19 @@
                                 <div class="card-body p-5 gap-4">
 
                                     <!-- Schedule header -->
-                                    <div class="flex items-start justify-between gap-4">
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-2 flex-wrap">
-                                                <h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
-                                                <span class="badge badge-sm {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">{schedule.status}</span>
+                                    <div class="flex flex-col gap-2">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <h4 class="text-lg font-bold text-ubuntu">{schedule.title}</h4>
+                                                    <span class="badge badge-sm {schedule.status === 'ACTIVE' ? 'badge-success text-white' : 'badge-neutral'}">{schedule.status}</span>
+                                                </div>
+                                                <p class="text-xs opacity-60 font-mono mt-1">
+                                                    {new Date(schedule.start).toLocaleString()} — {new Date(schedule.end).toLocaleString()}
+                                                </p>
                                             </div>
-                                            <p class="text-xs opacity-60 font-mono mt-1">
-                                                {new Date(schedule.start).toLocaleString()} — {new Date(schedule.end).toLocaleString()}
-                                            </p>
-                                        </div>
-                                        <div class="flex items-center gap-1 shrink-0">
-                                            <a href="{base}/schedules/availability?id={schedule.id}" class="btn btn-sm btn-outline">Submit Availability</a>
-                                            <button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
-                                                {openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
-                                            </button>
                                             {#if isAdmin}
-                                                <div class="dropdown dropdown-end">
+                                                <div class="dropdown dropdown-end shrink-0">
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <!-- svelte-ignore a11y_label_has_associated_control -->
                                                     <label tabindex="0" class="btn btn-ghost btn-sm btn-circle">
@@ -440,6 +436,13 @@
                                                     </ul>
                                                 </div>
                                             {/if}
+                                        </div>
+                                        <!-- Action buttons: full row, wraps on mobile -->
+                                        <div class="flex items-center gap-1 flex-wrap">
+                                            <a href="{base}/schedules/availability?id={schedule.id}" class="btn btn-sm btn-outline">Submit Availability</a>
+                                            <button class="btn btn-sm btn-primary" onclick={() => toggleHeatmap(schedule.id, schedule.start)}>
+                                                {openHeatmapId === schedule.id ? 'Hide Heatmap' : 'View Heatmap'}
+                                            </button>
                                         </div>
                                     </div>
 
@@ -565,7 +568,7 @@
                                                             class="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-base-300 rounded-lg"
                                                             onclick={() => toggleParty(party.id, schedule.id)}
                                                         >
-                                                            <div class="flex items-center gap-3 min-w-0">
+                                                            <div class="flex items-center gap-3 flex-1 min-w-0">
                                                                 <span class="font-bold text-sm font-neo truncate">{party.title}</span>
                                                                 <span class="text-xs opacity-60 font-mono shrink-0">{party.members}/{party.max}</span>
                                                                 <span class="badge badge-sm {party.status === 'Done' ? 'badge-success text-white' : 'badge-outline'} hidden sm:flex">{party.status}</span>
