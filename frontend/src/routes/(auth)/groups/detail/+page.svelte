@@ -33,10 +33,11 @@
     let charIlvl = $state('');
     let charFormLoading = $state(false);
 
-    // Character picker
-    let joinTargetPartyId = $state<string | null>(null);
-    let joinTargetScheduleId = $state<string | null>(null);
-    let characterPickerDialog: HTMLDialogElement;
+    // Join party modal
+    let joinModalParty = $state<{ party: PartyResponse; scheduleId: string } | null>(null);
+    let joinModalCharId = $state<string>('');
+    let joinModalLoading = $state(false);
+    let joinModalDialog: HTMLDialogElement;
 
     let isManager = $derived(members.find(m => m.id === auth.user?.id)?.role === 'MANAGER');
     let isAuditor = $derived(members.find(m => m.id === auth.user?.id)?.role === 'AUDITOR');
@@ -182,18 +183,24 @@
         }
     }
 
-    function initiateJoin(partyId: string, scheduleId: string) {
+    function openJoinModal(party: PartyResponse, scheduleId: string) {
         if (myCharacters.length === 0) {
             toast.error('Register a character in the sidebar before joining a party.');
             return;
         }
-        if (myCharacters.length === 1) {
-            joinParty(partyId, myCharacters[0].id, scheduleId);
-        } else {
-            joinTargetPartyId = partyId;
-            joinTargetScheduleId = scheduleId;
-            characterPickerDialog.showModal();
-        }
+        joinModalParty = { party, scheduleId };
+        joinModalCharId = myCharacters[0].id;
+        joinModalDialog.showModal();
+    }
+
+    async function confirmJoin() {
+        if (!joinModalParty || !joinModalCharId) return;
+        joinModalLoading = true;
+        const { party, scheduleId } = joinModalParty;
+        joinModalDialog.close();
+        joinModalParty = null;
+        joinModalLoading = false;
+        await joinParty(party.id, joinModalCharId, scheduleId);
     }
 
     async function joinParty(partyId: string, characterId: string, scheduleId: string) {
@@ -574,6 +581,12 @@
                                                                 <span class="badge badge-sm {party.status === 'Done' ? 'badge-success text-white' : 'badge-outline'} hidden sm:flex">{party.status}</span>
                                                             </div>
                                                             <div class="flex items-center gap-2 shrink-0">
+                                                                {#if party.status !== 'Done' && party.members < party.max && myCharacters.length > 0}
+                                                                    <button
+                                                                        class="btn btn-xs btn-primary"
+                                                                        onclick={(e) => { e.stopPropagation(); openJoinModal(party, schedule.id); }}
+                                                                    >Join</button>
+                                                                {/if}
                                                                 {#if isAdmin}
                                                                     <div class="dropdown dropdown-end" onclick={(e) => e.stopPropagation()}>
                                                                         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -638,13 +651,6 @@
                                                                     </div>
                                                                 </div>
 
-                                                                {#if party.status !== 'Done' && party.members < party.max && mySlots.length < (group?.maxPartiesPerCharacter ?? 3)}
-                                                                    <div class="flex justify-end mt-4 pt-3 border-t border-base-200">
-                                                                        <button class="btn btn-sm btn-primary" onclick={() => initiateJoin(party.id, schedule.id)}>
-                                                                            Join Party
-                                                                        </button>
-                                                                    </div>
-                                                                {/if}
                                                             </div>
                                                         {/if}
                                                     </div>
@@ -771,26 +777,82 @@
     </div>
 </main>
 
-<!-- Character picker dialog -->
-<dialog bind:this={characterPickerDialog} class="modal">
-    <div class="modal-box max-w-sm">
-        <h3 class="font-bold text-lg mb-4">Select Character</h3>
-        <div class="space-y-2">
-            {#each myCharacters as char}
-                <button
-                    class="btn btn-outline w-full justify-start gap-3 h-auto py-2"
-                    onclick={() => { characterPickerDialog.close(); joinParty(joinTargetPartyId!, char.id, joinTargetScheduleId!); }}
-                >
-                    <div class="text-left">
-                        <p class="font-bold">{char.name}</p>
-                        <p class="text-xs opacity-60">{char.characterClass ?? 'Unknown class'}{char.itemLevel ? ` · il${char.itemLevel}` : ''}</p>
+<!-- Join party modal -->
+<dialog bind:this={joinModalDialog} class="modal">
+    <div class="modal-box max-w-md">
+        {#if joinModalParty}
+            {@const p = joinModalParty.party}
+            <!-- Header -->
+            <div class="mb-5">
+                <h3 class="font-bold text-lg text-ubuntu">{p.title}</h3>
+                <div class="flex items-center gap-3 mt-1 text-sm opacity-60">
+                    <span>{p.raidType}</span>
+                    <span>·</span>
+                    <span>{p.members}/{p.max} members</span>
+                    {#if p.start}
+                        <span>·</span>
+                        <span class="font-mono">{new Date(p.start).toLocaleString()}</span>
+                    {/if}
+                </div>
+            </div>
+
+            <!-- Current members preview -->
+            {#if p.joinedMembers.length > 0}
+                <div class="mb-4">
+                    <p class="text-xs font-bold opacity-50 uppercase tracking-wider mb-2">Current Members</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        {#each p.joinedMembers as pm}
+                            <span class="badge badge-neutral gap-1">
+                                <span>{pm.characterName}</span>
+                                {#if pm.characterClass}<span class="opacity-60">{pm.characterClass}</span>{/if}
+                            </span>
+                        {/each}
+                        {#each Array(p.max - p.members) as _}
+                            <span class="badge badge-outline border-dashed opacity-30">Empty</span>
+                        {/each}
                     </div>
+                </div>
+            {/if}
+
+            <div class="divider my-3"></div>
+
+            <!-- Character selection -->
+            <p class="text-sm font-bold mb-3">Choose a character to join with:</p>
+            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {#each myCharacters as char}
+                    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+                    <!-- svelte-ignore a11y_click_events_have_key_events -->
+                    <label
+                        class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors
+                            {joinModalCharId === char.id ? 'border-primary bg-primary/5' : 'border-base-300 hover:border-base-400'}"
+                        onclick={() => joinModalCharId = char.id}
+                    >
+                        <input type="radio" name="join-char" class="radio radio-primary radio-sm" value={char.id} bind:group={joinModalCharId} />
+                        <div class="flex-1 min-w-0">
+                            <p class="font-bold text-sm">{char.name}</p>
+                            <p class="text-xs opacity-60">
+                                {char.characterClass ?? 'Unknown class'}{char.itemLevel ? ` · il${char.itemLevel}` : ''}
+                            </p>
+                        </div>
+                        {#if p.joinedMembers.some(pm => pm.characterId === char.id)}
+                            <span class="badge badge-success badge-sm shrink-0">Joined</span>
+                        {/if}
+                    </label>
+                {/each}
+            </div>
+
+            <div class="modal-action mt-5">
+                <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
+                <button
+                    class="btn btn-primary"
+                    disabled={!joinModalCharId || joinModalLoading || joinModalParty.party.joinedMembers.some(pm => pm.characterId === joinModalCharId)}
+                    onclick={confirmJoin}
+                >
+                    {#if joinModalLoading}<span class="loading loading-spinner loading-xs"></span>{/if}
+                    Join Party
                 </button>
-            {/each}
-        </div>
-        <div class="modal-action">
-            <form method="dialog"><button class="btn btn-ghost">Cancel</button></form>
-        </div>
+            </div>
+        {/if}
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
