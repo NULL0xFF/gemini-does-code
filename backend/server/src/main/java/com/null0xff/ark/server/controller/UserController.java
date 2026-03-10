@@ -49,7 +49,7 @@ public class UserController {
         body.put("id", user.getId());
         body.put("discordId", user.getDiscordId());
         body.put("username", user.getUsername());
-        body.put("nickname", user.getNickname() != null ? user.getNickname() : "");
+        body.put("nickname", user.getNickname());
         body.put("avatar", user.getAvatar());
         return ResponseEntity.ok(body);
     }
