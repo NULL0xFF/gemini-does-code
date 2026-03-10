@@ -171,6 +171,29 @@ public class ScheduleController {
   }
 
   /**
+   * Restores an archived schedule back to the active list. Requires {@code MANAGER} or
+   * {@code AUDITOR} role.
+   *
+   * @param jwt     the caller's JWT
+   * @param payload the request containing scheduleId
+   * @return 200 OK on success
+   */
+  @Operation(summary = "Unarchive Schedule", description = "Restores an archived schedule to the active list. Requires MANAGER or AUDITOR role.")
+  @ApiResponse(responseCode = "200", description = "Schedule unarchived successfully")
+  @ApiResponse(responseCode = "401", description = "Missing or invalid JWT")
+  @ApiResponse(responseCode = "403", description = "Caller lacks MANAGER or AUDITOR role")
+  @ApiResponse(responseCode = "404", description = "Schedule not found")
+  @PostMapping("/api/schedules/unarchive")
+  public ResponseEntity<Void> unarchiveSchedule(
+      @AuthenticationPrincipal Jwt jwt,
+      @RequestBody Map<String, UUID> payload) {
+    UUID userId = UUID.fromString(jwt.getSubject());
+    UUID scheduleId = payload.get("scheduleId");
+    scheduleService.unarchiveSchedule(scheduleId, userId);
+    return ResponseEntity.ok().build();
+  }
+
+  /**
    * Returns all archived schedules for the given group. Requires membership.
    *
    * @param jwt     the caller's JWT

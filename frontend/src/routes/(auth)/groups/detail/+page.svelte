@@ -64,6 +64,9 @@
     let deleteScheduleModal: ReturnType<typeof ConfirmationModal>;
     let scheduleToDelete = $state<string | null>(null);
 
+    let archiveScheduleModal: ReturnType<typeof ConfirmationModal>;
+    let scheduleToArchive = $state<string | null>(null);
+
     let deletePartyModal: ReturnType<typeof ConfirmationModal>;
     let partyToDelete = $state<PartyResponse | null>(null);
 
@@ -172,13 +175,32 @@
         }
     }
 
-    async function archiveSchedule(scheduleId: string) {
+    function requestArchiveSchedule(scheduleId: string) {
+        scheduleToArchive = scheduleId;
+        archiveScheduleModal.show();
+    }
+
+    async function confirmArchiveSchedule() {
+        if (!scheduleToArchive) return;
         try {
-            await fetchApi(`/api/schedules/archive`, { method: 'POST', body: JSON.stringify({ scheduleId }) });
+            await fetchApi(`/api/schedules/archive`, { method: 'POST', body: JSON.stringify({ scheduleId: scheduleToArchive }) });
             await fetchData();
             toast.success('Schedule archived.');
         } catch {
             toast.error('Failed to archive schedule.');
+        } finally {
+            scheduleToArchive = null;
+        }
+    }
+
+    async function unarchiveSchedule(scheduleId: string) {
+        try {
+            await fetchApi(`/api/schedules/unarchive`, { method: 'POST', body: JSON.stringify({ scheduleId }) });
+            archivedSchedules = archivedSchedules.filter(s => s.id !== scheduleId);
+            await fetchData();
+            toast.success('Schedule restored to active list.');
+        } catch {
+            toast.error('Failed to unarchive schedule.');
         }
     }
 
@@ -518,7 +540,7 @@
                                                     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                                                     <ul tabindex="0" class="dropdown-content z-10 menu p-2 shadow bg-base-100 rounded-box w-32 border border-base-200">
                                                         <li><button onclick={() => openRenameModal(schedule)}>Rename</button></li>
-                                                        <li><button onclick={() => archiveSchedule(schedule.id)}>Archive</button></li>
+                                                        <li><button onclick={() => requestArchiveSchedule(schedule.id)}>Archive</button></li>
                                                         <li><button class="text-error" onclick={() => requestDeleteSchedule(schedule.id)}>Delete</button></li>
                                                     </ul>
                                                 </div>
@@ -1027,15 +1049,21 @@
         {:else}
             <ul class="space-y-2">
                 {#each archivedSchedules as s}
-                    <li>
+                    <li class="flex items-center gap-2 p-2 rounded-lg border border-base-200">
                         <a
                             href="{base}/schedules/view?id={s.id}"
-                            class="flex flex-col gap-0.5 p-3 rounded-lg hover:bg-base-200 transition-colors cursor-pointer border border-base-200"
+                            class="flex flex-col gap-0.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                             onclick={() => historyModalDialog.close()}
                         >
-                            <span class="font-semibold text-ubuntu">{s.title}</span>
+                            <span class="font-semibold text-ubuntu truncate">{s.title}</span>
                             <span class="text-xs opacity-60 font-mono">{new Date(s.start).toLocaleString()} — {new Date(s.end).toLocaleString()}</span>
                         </a>
+                        {#if isAdmin}
+                            <button
+                                class="btn btn-xs btn-outline shrink-0"
+                                onclick={() => unarchiveSchedule(s.id)}
+                            >Restore</button>
+                        {/if}
                     </li>
                 {/each}
             </ul>
@@ -1046,6 +1074,16 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<ConfirmationModal
+    bind:this={archiveScheduleModal}
+    id="archive-schedule-modal"
+    title="Archive Schedule"
+    message="Archive this schedule? It will be hidden from the active list but can be viewed in History and restored at any time."
+    confirmText="Archive"
+    type="warning"
+    onConfirm={confirmArchiveSchedule}
+/>
 
 <ConfirmationModal
     bind:this={deleteScheduleModal}

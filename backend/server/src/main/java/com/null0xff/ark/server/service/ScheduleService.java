@@ -74,6 +74,17 @@ public class ScheduleService {
         scheduleRepository.save(schedule);
     }
 
+    @Transactional
+    public void unarchiveSchedule(UUID scheduleId, UUID userId) {
+        ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
+
+        authorizationHelper.requireRole(schedule.getGroup().getId(), userId, GroupRole.MANAGER, GroupRole.AUDITOR);
+
+        schedule.setArchived(false);
+        scheduleRepository.save(schedule);
+    }
+
     public ScheduleResponse getSchedule(UUID scheduleId, UUID userId) {
         ScheduleInstance schedule = scheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Schedule not found", scheduleId));
