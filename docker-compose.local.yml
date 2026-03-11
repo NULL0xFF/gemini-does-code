@@ -1,0 +1,30 @@
+services:
+  backend:
+    image: ghcr.io/${GITHUB_USERNAME}/ark-backend:latest
+    container_name: ark-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    # Allows containers to reach a MariaDB instance running on the host via
+    # host.docker.internal. Works natively on Docker Desktop (Mac/Windows);
+    # on Linux this extra_hosts entry maps the name to the host gateway IP.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/docs-json > /dev/null 2>&1 || exit 1"]
+      start_period: 45s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    image: ghcr.io/${GITHUB_USERNAME}/ark-frontend:latest
+    container_name: ark-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
