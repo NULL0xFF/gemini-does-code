@@ -14,6 +14,10 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository_owner }}/ark-backend
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-release-publish:
     runs-on: ubuntu-latest
@@ -38,7 +42,12 @@ jobs:
         env:
           BRANCH: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           BASE_VERSION=$(grep 'version =' backend/build.gradle.kts | cut -d '"' -f 2)
+          if [[ -z "$BASE_VERSION" ]]; then
+            echo "ERROR: Could not parse BASE_VERSION from backend/build.gradle.kts" >&2
+            exit 1
+          fi
           SHORT_SHA=$(git rev-parse --short HEAD)
 
           if [[ "$BRANCH" == "main" ]]; then
@@ -75,6 +84,7 @@ jobs:
 
       - name: Prepare release artifact
         run: |
+          set -euo pipefail
           mkdir -p release-artifacts
           cp backend/server/build/libs/server-$BASE_VERSION.jar release-artifacts/ark-server-$FINAL_VERSION.jar
 
@@ -101,14 +111,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           OLD_RELEASES=$(gh release list --json tagName -q ".[] | select(.tagName | startswith(\"$RELEASE_PREFIX\")) | .tagName")
-          for RELEASE in $OLD_RELEASES; do
+          while IFS= read -r RELEASE; do
+            [[ -z "$RELEASE" ]] && continue
             echo "Deleting old release: $RELEASE"
-            gh release delete "$RELEASE" --cleanup-tag -y || true
-          done
+            gh release delete "$RELEASE" --cleanup-tag -y \
+              || echo "WARNING: failed to delete release '$RELEASE' — check token permissions and rate limits" >&2
+          done <<< "$OLD_RELEASES"
 
       - name: Generate release notes
         run: |
+          set -euo pipefail
           echo "## Changelog for $BRANCH" > release_notes.md
           if [[ "$BRANCH" == "main" ]]; then
             echo "### Stable Release Updates" >> release_notes.md
@@ -116,17 +130,20 @@ jobs:
           elif [[ "$BRANCH" == "dev" ]]; then
             echo "### Changes since main" >> release_notes.md
             git log origin/main..HEAD --pretty=format:"* %s (%h)" >> release_notes.md \
-              || git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md
+              || { echo "WARNING: Could not diff against origin/main, falling back to last 10 commits" >&2
+                   git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md; }
           else
             echo "### Changes in this feature branch" >> release_notes.md
             git log origin/dev..HEAD --pretty=format:"* %s (%h)" >> release_notes.md \
-              || git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md
+              || { echo "WARNING: Could not diff against origin/dev, falling back to last 10 commits" >&2
+                   git log -n 10 --pretty=format:"* %s (%h)" >> release_notes.md; }
           fi
 
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           PRERELEASE_FLAG=""
           if [[ "$IS_PRERELEASE" == "true" ]]; then
             PRERELEASE_FLAG="--prerelease"

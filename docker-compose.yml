@@ -28,6 +28,13 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      # Uses the springdoc JSON endpoint which is always available after startup
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/docs-json > /dev/null 2>&1 || exit 1"]
+      start_period: 45s
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     image: ghcr.io/${GITHUB_USERNAME}/ark-frontend:latest
@@ -36,7 +43,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
   watchtower:
     image: containrrr/watchtower
@@ -44,6 +52,7 @@ services:
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      # Requires prior `docker login ghcr.io` on the host to pull private images
       - ~/.docker/config.json:/config.json:ro
     command: --interval 60 --cleanup ark-frontend ark-backend
 

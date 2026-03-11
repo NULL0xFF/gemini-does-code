@@ -7,7 +7,7 @@ COPY gradle/ gradle/
 COPY build.gradle.kts settings.gradle.kts ./
 COPY server/build.gradle.kts server/
 
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon --quiet
+RUN chmod +x gradlew && ./gradlew dependencies --no-daemon
 
 # Copy source and build the fat jar
 COPY server/src/ server/src/
