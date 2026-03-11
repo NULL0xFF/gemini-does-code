@@ -150,6 +150,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          if gh release view "$FINAL_VERSION" > /dev/null 2>&1; then
+            echo "Release $FINAL_VERSION already exists — skipping (bump version in build.gradle.kts to create a new release)"
+            exit 0
+          fi
           PRERELEASE_FLAG=""
           if [[ "$IS_PRERELEASE" == "true" ]]; then
             PRERELEASE_FLAG="--prerelease"
